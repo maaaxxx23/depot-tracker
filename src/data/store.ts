@@ -1,0 +1,161 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { RawPortfolio, Snapshot } from '../comdirect/portfolio';
+import type { VisitSnapshot } from '../finance/visit';
+import type { IndustryCache } from '../market/industries';
+import type { MarketData } from '../market/yahoo';
+import type { BackupSettings, StoredPortfolio } from './backupFormat';
+import type { FundComposition } from './holdingsImport';
+
+// Lokale Ablage auf dem iPhone (keine Zugangsdaten, die liegen im Schlüsselbund).
+
+const KEYS = {
+  raw: 'comdirect-raw-v1',
+  fetchedAt: 'comdirect-fetched-at-v1',
+  snapshots: 'comdirect-snapshots-v1',
+  openChallenges: 'comdirect-open-challenges-v1',
+  market: 'market-prices-v1',
+  lastBackup: 'last-backup-v1',
+  visitLast: 'visit-last-v1',
+  visitBaseline: 'visit-baseline-v1',
+  compositions: 'fund-compositions-v1',
+  industries: 'company-industries-v1',
+};
+
+// Bleiben auch nach „Zugang löschen“ erhalten (keine Depotdaten)
+const PREFERENCES = { chartMode: 'chart-mode-v1', goal: 'goal-v1', assumedReturn: 'assumed-return-v1', savingsMarks: 'savings-marks-v1', targetShares: 'target-shares-v1' };
+
+const MAX_SNAPSHOTS = 2000;
+
+async function readJson<T>(key: string, fallback: T): Promise<T> {
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export type { StoredPortfolio };
+
+/** Ersetzt den gespeicherten Stand komplett, z. B. nach dem Einlesen einer Sicherung. */
+export async function replaceStored(stored: StoredPortfolio): Promise<void> {
+  await AsyncStorage.multiSet([
+    [KEYS.raw, JSON.stringify(stored.raw)],
+    [KEYS.fetchedAt, JSON.stringify(stored.fetchedAt)],
+    [KEYS.snapshots, JSON.stringify(stored.snapshots.slice(-MAX_SNAPSHOTS))],
+  ]);
+}
+
+export async function loadStored(): Promise<StoredPortfolio | null> {
+  const [raw, fetchedAt, snapshots] = await Promise.all([
+    readJson<RawPortfolio | null>(KEYS.raw, null),
+    readJson<string | null>(KEYS.fetchedAt, null),
+    readJson<Snapshot[]>(KEYS.snapshots, []),
+  ]);
+  return raw && fetchedAt ? { raw, fetchedAt, snapshots } : null;
+}
+
+/** Speichert den neuen Abruf; pro Tag bleibt der jeweils letzte Kurs-Snapshot. */
+export async function saveFetch(raw: RawPortfolio, fetchedAt: string, snapshot: Snapshot): Promise<Snapshot[]> {
+  const previous = await readJson<Snapshot[]>(KEYS.snapshots, []);
+  const snapshots = [...previous.filter((s) => s.date !== snapshot.date), snapshot].sort((a, b) => a.date.localeCompare(b.date)).slice(-MAX_SNAPSHOTS);
+  await AsyncStorage.multiSet([
+    [KEYS.raw, JSON.stringify(raw)],
+    [KEYS.fetchedAt, JSON.stringify(fetchedAt)],
+    [KEYS.snapshots, JSON.stringify(snapshots)],
+  ]);
+  return snapshots;
+}
+
+/** Zwischenspeicher der Kurshistorie, damit die App sie nicht bei jedem Start neu lädt. */
+export const marketCache = {
+  get: () => readJson<MarketData | null>(KEYS.market, null),
+  set: (market: MarketData) => AsyncStorage.setItem(KEYS.market, JSON.stringify(market)),
+};
+
+/** Bestand und Kurse am Ende des letzten Besuchs (last) und Vergleichsbasis des laufenden Besuchs (baseline). */
+export const visitStore = {
+  getLast: () => readJson<VisitSnapshot | null>(KEYS.visitLast, null),
+  setLast: (s: VisitSnapshot) => AsyncStorage.setItem(KEYS.visitLast, JSON.stringify(s)),
+  getBaseline: () => readJson<VisitSnapshot | null>(KEYS.visitBaseline, null),
+  setBaseline: (s: VisitSnapshot) => AsyncStorage.setItem(KEYS.visitBaseline, JSON.stringify(s)),
+};
+
+/** Importierte Bestandslisten der ETFs je ISIN (Länder, Branchen, größte Firmen). */
+export const compositionStore = {
+  get: () => readJson<Record<string, FundComposition>>(KEYS.compositions, {}),
+  set: (all: Record<string, FundComposition>) => AsyncStorage.setItem(KEYS.compositions, JSON.stringify(all)),
+};
+
+/** Geschäftsbereiche der größten Firmen (von Yahoo), damit sie nicht jedes Mal neu gesucht werden. */
+export const industryStore = {
+  get: () => readJson<IndustryCache>(KEYS.industries, {}),
+  set: (cache: IndustryCache) => AsyncStorage.setItem(KEYS.industries, JSON.stringify(cache)),
+};
+
+/** Zeitpunkt der letzten Sicherung (ISO), null = noch nie gesichert. */
+export const lastBackup = {
+  get: () => readJson<string | null>(KEYS.lastBackup, null),
+  set: (iso: string) => AsyncStorage.setItem(KEYS.lastBackup, JSON.stringify(iso)),
+};
+
+/** Zuletzt gewählte Chart-Ansicht (Euro oder Prozent). */
+export const chartModePreference = {
+  get: () => readJson<'value' | 'return'>(PREFERENCES.chartMode, 'value'),
+  set: (mode: 'value' | 'return') => AsyncStorage.setItem(PREFERENCES.chartMode, JSON.stringify(mode)),
+};
+
+/** Wunschbetrag für das Depot in Euro; null = keiner festgelegt. */
+export const goalPreference = {
+  get: () => readJson<number | null>(PREFERENCES.goal, null),
+  set: (goal: number | null) => (goal === null ? AsyncStorage.removeItem(PREFERENCES.goal) : AsyncStorage.setItem(PREFERENCES.goal, JSON.stringify(goal))),
+};
+
+/** Angenommene Rendite pro Jahr für die Hochrechnung zum Ziel; null = Vorgabe. */
+export const assumedReturnPreference = {
+  get: () => readJson<number | null>(PREFERENCES.assumedReturn, null),
+  set: (rate: number) => AsyncStorage.setItem(PREFERENCES.assumedReturn, JSON.stringify(rate)),
+};
+
+/** ISINs, die du selbst als Sparplan markiert hast. */
+export const savingsMarks = {
+  get: () => readJson<string[]>(PREFERENCES.savingsMarks, []),
+  set: (isins: string[]) => AsyncStorage.setItem(PREFERENCES.savingsMarks, JSON.stringify(isins)),
+};
+
+/** Zielaufteilung: Wunschanteil je ISIN; leer = keine. */
+export const targetSharesPreference = {
+  get: () => readJson<Record<string, number>>(PREFERENCES.targetShares, {}),
+  set: (shares: Record<string, number>) => AsyncStorage.setItem(PREFERENCES.targetShares, JSON.stringify(shares)),
+};
+
+/** Alle persönlichen Einstellungen auf einmal, für Sichern und Wiederherstellen. */
+export async function loadSettings(): Promise<BackupSettings> {
+  const [goal, assumedReturn, marks, targetShares] = await Promise.all([goalPreference.get(), assumedReturnPreference.get(), savingsMarks.get(), targetSharesPreference.get()]);
+  return { goal, assumedReturn, savingsMarks: marks, targetShares };
+}
+
+export async function saveSettings(settings: BackupSettings): Promise<void> {
+  await goalPreference.set(settings.goal);
+  if (settings.assumedReturn !== null) await assumedReturnPreference.set(settings.assumedReturn);
+  await savingsMarks.set(settings.savingsMarks);
+  await targetSharesPreference.set(settings.targetShares);
+}
+
+export async function clearStored(): Promise<void> {
+  await AsyncStorage.multiRemove(Object.values(KEYS));
+}
+
+/**
+ * Zählt TAN-Anfragen ohne erfolgreiche Freigabe. comdirect sperrt nach fünf davon,
+ * deshalb warnt die App früh und blockiert vor der fünften.
+ */
+export const openChallenges = {
+  get: () => readJson<number>(KEYS.openChallenges, 0),
+  increment: async () => {
+    const next = (await openChallenges.get()) + 1;
+    await AsyncStorage.setItem(KEYS.openChallenges, JSON.stringify(next));
+    return next;
+  },
+  reset: () => AsyncStorage.setItem(KEYS.openChallenges, '0'),
+};
