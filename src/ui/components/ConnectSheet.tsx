@@ -1,9 +1,10 @@
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, InputAccessoryView, Keyboard, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, InputAccessoryView, Keyboard, Platform, Pressable, Switch, Text, TextInput, View } from 'react-native';
 import { clearCredentials, saveCredentials, Setup } from '../../comdirect/credentials';
 import { applyCsv, exportBackup, importBackup, pickDepotCsv } from '../../data/backup';
 import type { StoredPortfolio } from '../../data/backupFormat';
-import { clearStored } from '../../data/store';
+import { appLockPreference, clearStored } from '../../data/store';
 import { eur, monthYear } from '../format';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
@@ -54,7 +55,37 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
     setUsername(setup?.username ?? '');
     setPin('');
     setEditing(!setup);
+    appLockPreference.get().then(setLock).catch(() => {});
   }, [visible, setup]);
+
+  // Zugangsdaten (Client ID, Secret) erst nach Face ID bzw. Geräte-Code zeigen.
+  // Nur wenn auf dem Gerät gar nichts eingerichtet ist, geht es direkt auf.
+  const startEditing = async () => {
+    const hardware = await LocalAuthentication.hasHardwareAsync().catch(() => false);
+    const enrolled = hardware && (await LocalAuthentication.isEnrolledAsync().catch(() => false));
+    if (enrolled) {
+      const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'Zugangsdaten anzeigen' }).catch(() => ({ success: false }));
+      if (!result.success) return;
+    }
+    setEditing(true);
+  };
+
+  // App-Sperre: vor dem Einschalten einmal entsperren, damit niemand sich selbst aussperrt
+  const [lock, setLock] = useState(false);
+  const toggleLock = async (on: boolean) => {
+    if (on) {
+      const hardware = await LocalAuthentication.hasHardwareAsync().catch(() => false);
+      const enrolled = hardware && (await LocalAuthentication.isEnrolledAsync().catch(() => false));
+      if (!hardware || !enrolled) {
+        Alert.alert('Nicht eingerichtet', 'Richte zuerst Face ID oder einen Geräte-Code in den iOS-Einstellungen ein.');
+        return;
+      }
+      const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'App-Sperre einschalten' }).catch(() => ({ success: false }));
+      if (!result.success) return;
+    }
+    setLock(on);
+    appLockPreference.set(on).catch(() => {});
+  };
 
   const complete = clientId.trim() && clientSecret.trim() && /^\d{8}$/.test(username.trim()) && (setup || /^\d{6}$/.test(pin));
 
@@ -200,7 +231,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
             Gespeichert für die Zugangsnummer ••••{setup.username.slice(-4)} – nur im Schlüsselbund dieses iPhones, die PIN
             zusätzlich mit Face ID geschützt. Die App liest nur und kann keine Aufträge erteilen.
           </Text>
-          <Pressable onPress={() => setEditing(true)} style={({ pressed }) => [secondary, { opacity: pressed ? 0.6 : 1 }]}>
+          <Pressable onPress={startEditing} style={({ pressed }) => [secondary, { opacity: pressed ? 0.6 : 1 }]}>
             <Text style={secondaryText}>Zugangsdaten ändern</Text>
           </Pressable>
         </View>
@@ -255,13 +286,25 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
         </>
       )}
 
+      <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Schutz</Text>
+      <View style={[styles.card, { gap: 10 }]}>
+        <View style={[styles.row, { justifyContent: 'space-between' }]}>
+          <Text style={[styles.label, { fontWeight: '600' }]}>Mit Face ID sperren</Text>
+          <Switch value={lock} onValueChange={toggleLock} />
+        </View>
+        <Text style={styles.small}>
+          Beim Öffnen und nach dem Wechsel in eine andere App muss Depot Tracker erst mit Face ID oder dem Geräte-Code
+          entsperrt werden.
+        </Text>
+      </View>
+
       {/* Sicherung: gesammelte Umsätze überstehen so auch ein Löschen der App */}
       <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Daten sichern</Text>
       <View style={[styles.card, { gap: 10 }]}>
         <Text style={styles.small}>
           comdirect liefert nur etwa ein halbes Jahr an Umsätzen. Die App sammelt sie bei jedem Abruf; mit einer Sicherung in
-          iCloud Drive bleiben sie auch nach dem Löschen der App erhalten. Die Datei enthält deine Depotdaten und
-          Einstellungen (Ziel, Rendite, Sparpläne), aber keine Zugangsdaten.
+          iCloud Drive bleiben sie auch nach dem Löschen der App erhalten. Die Datei enthält deine Depotdaten,
+          Einstellungen (Ziel, Rendite, Sparpläne) und die importierten ETF-Listen, aber keine Zugangsdaten.
         </Text>
         <View style={[styles.row, { gap: 10 }]}>
           <Pressable onPress={backup} disabled={busy} style={({ pressed }) => [secondary, { opacity: busy ? 0.4 : pressed ? 0.6 : 1 }]}>

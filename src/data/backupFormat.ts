@@ -3,6 +3,8 @@
 // aber nie Zugangsdaten: die bleiben im Schlüsselbund.
 
 import { mergeTransactions, RawPortfolio, Snapshot } from '../comdirect/portfolio';
+import type { IndustryCache, IndustryEntry } from '../market/industries';
+import type { FundComposition } from './holdingsImport';
 
 export interface StoredPortfolio {
   raw: RawPortfolio;
@@ -27,16 +29,28 @@ export interface BackupSettings {
 
 export const NO_SETTINGS: BackupSettings = { goal: null, assumedReturn: null, savingsMarks: [], targetShares: {} };
 
+/** Importierte ETF-Bestandslisten und der Branchen-Zwischenspeicher: kommen mit in die Sicherung, damit sie einen Gerätewechsel überleben. */
+export interface BackupLists {
+  /** Je ISIN die eingelesene Bestandsliste des Anbieters */
+  compositions: Record<string, FundComposition>;
+  /** Geschäftsbereiche der größten Firmen (Schlüssel: companyKey) */
+  industries: IndustryCache;
+}
+
+export const NO_LISTS: BackupLists = { compositions: {}, industries: {} };
+
 interface BackupFile extends StoredPortfolio {
   app: typeof APP;
   version: number;
   exportedAt: string;
   /** Fehlt in Sicherungen aus älteren App-Ständen */
   settings?: Partial<BackupSettings>;
+  /** Fehlt in Sicherungen aus älteren App-Ständen */
+  lists?: Partial<BackupLists>;
 }
 
-export function serializeBackup(stored: StoredPortfolio, exportedAt: string, settings?: BackupSettings): string {
-  const file: BackupFile = { app: APP, version: VERSION, exportedAt, ...stored, ...(settings ? { settings } : {}) };
+export function serializeBackup(stored: StoredPortfolio, exportedAt: string, settings?: BackupSettings, lists?: BackupLists): string {
+  const file: BackupFile = { app: APP, version: VERSION, exportedAt, ...stored, ...(settings ? { settings } : {}), ...(lists ? { lists } : {}) };
   return JSON.stringify(file);
 }
 
@@ -71,6 +85,43 @@ export function mergeSettings(current: BackupSettings, backup: BackupSettings): 
     // Eine Aufteilung gehört zusammen (100 %): entweder die vom iPhone oder die aus der Sicherung, nie gemischt
     targetShares: Object.keys(current.targetShares).length ? current.targetShares : backup.targetShares,
   };
+}
+
+/** ETF-Listen aus einer Sicherung; unbekannte oder unvollständige Einträge werden übersprungen. */
+export function parseBackupLists(text: string): BackupLists {
+  let lists: Partial<BackupLists> | undefined;
+  try {
+    lists = (JSON.parse(text) as Partial<BackupFile>)?.lists;
+  } catch {
+    return NO_LISTS;
+  }
+  if (!lists || typeof lists !== 'object') return NO_LISTS;
+  const compositions = Object.fromEntries(
+    Object.entries(lists.compositions && typeof lists.compositions === 'object' ? lists.compositions : {}).filter(
+      ([, f]) => f && typeof f === 'object' && Array.isArray((f as FundComposition).top) && typeof (f as FundComposition).importedAt === 'string',
+    ),
+  ) as Record<string, FundComposition>;
+  const industries = Object.fromEntries(
+    Object.entries(lists.industries && typeof lists.industries === 'object' ? lists.industries : {}).filter(
+      ([, e]) => e && typeof e === 'object' && typeof (e as IndustryEntry).checkedAt === 'string',
+    ),
+  ) as IndustryCache;
+  return { compositions, industries };
+}
+
+/** Je ISIN bzw. Firma gewinnt der neuere Stand, egal ob er vom iPhone oder aus der Sicherung kommt. */
+export function mergeLists(current: BackupLists, backup: BackupLists): BackupLists {
+  const compositions = { ...current.compositions };
+  for (const [isin, fund] of Object.entries(backup.compositions)) {
+    const own = compositions[isin];
+    if (!own || fund.importedAt > own.importedAt) compositions[isin] = fund;
+  }
+  const industries = { ...current.industries };
+  for (const [key, entry] of Object.entries(backup.industries)) {
+    const own = industries[key];
+    if (!own || entry.checkedAt > own.checkedAt) industries[key] = entry;
+  }
+  return { compositions, industries };
 }
 
 /** Liest eine Sicherung; wirft mit verständlicher Meldung, wenn die Datei nicht passt. */

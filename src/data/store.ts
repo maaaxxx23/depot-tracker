@@ -3,7 +3,7 @@ import type { RawPortfolio, Snapshot } from '../comdirect/portfolio';
 import type { VisitSnapshot } from '../finance/visit';
 import type { IndustryCache } from '../market/industries';
 import type { MarketData } from '../market/yahoo';
-import type { BackupSettings, StoredPortfolio } from './backupFormat';
+import type { BackupLists, BackupSettings, StoredPortfolio } from './backupFormat';
 import type { FundComposition } from './holdingsImport';
 
 // Lokale Ablage auf dem iPhone (keine Zugangsdaten, die liegen im Schlüsselbund).
@@ -22,7 +22,7 @@ const KEYS = {
 };
 
 // Bleiben auch nach „Zugang löschen“ erhalten (keine Depotdaten)
-const PREFERENCES = { chartMode: 'chart-mode-v1', goal: 'goal-v1', assumedReturn: 'assumed-return-v1', savingsMarks: 'savings-marks-v1', targetShares: 'target-shares-v1' };
+const PREFERENCES = { chartMode: 'chart-mode-v1', goal: 'goal-v1', assumedReturn: 'assumed-return-v1', savingsMarks: 'savings-marks-v1', targetShares: 'target-shares-v1', appLock: 'app-lock-v1' };
 
 const MAX_SNAPSHOTS = 2000;
 
@@ -128,6 +128,23 @@ export const targetSharesPreference = {
   get: () => readJson<Record<string, number>>(PREFERENCES.targetShares, {}),
   set: (shares: Record<string, number>) => AsyncStorage.setItem(PREFERENCES.targetShares, JSON.stringify(shares)),
 };
+
+/** App-Sperre: beim Öffnen mit Face ID bzw. Geräte-Code entsperren. Bewusst gerätespezifisch, kommt nicht in die Sicherung. */
+export const appLockPreference = {
+  get: () => readJson<boolean>(PREFERENCES.appLock, false),
+  set: (on: boolean) => AsyncStorage.setItem(PREFERENCES.appLock, JSON.stringify(on)),
+};
+
+/** ETF-Listen und Branchen-Zwischenspeicher auf einmal, für Sichern und Wiederherstellen. */
+export async function loadLists(): Promise<BackupLists> {
+  const [compositions, industries] = await Promise.all([compositionStore.get(), industryStore.get()]);
+  return { compositions, industries };
+}
+
+export async function saveLists(lists: BackupLists): Promise<void> {
+  await compositionStore.set(lists.compositions);
+  await industryStore.set(lists.industries);
+}
 
 /** Alle persönlichen Einstellungen auf einmal, für Sichern und Wiederherstellen. */
 export async function loadSettings(): Promise<BackupSettings> {

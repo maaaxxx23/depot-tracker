@@ -156,7 +156,7 @@ export const GUIDE: GuideSection[] = [
     body: [
       'Die App sammelt mit jedem Abruf und Import Umsätze, die comdirect später nicht mehr liefert. Damit sie ein Löschen der App überstehen:',
       '„Zugang verwalten“ → „Sichern“ → „In Dateien sichern“ → iCloud Drive.',
-      '„Wiederherstellen“ führt eine Sicherung mit dem aktuellen Stand zusammen und überschreibt nichts. Die Datei enthält deine Depotdaten sowie Ziel, angenommene Rendite, Sparplan-Markierungen und Zielaufteilung, aber keine Zugangsdaten.',
+      '„Wiederherstellen“ führt eine Sicherung mit dem aktuellen Stand zusammen und überschreibt nichts. Die Datei enthält deine Depotdaten, Ziel, angenommene Rendite, Sparplan-Markierungen, Zielaufteilung und die importierten ETF-Listen, aber keine Zugangsdaten.',
       'Einstellungen, die auf dem iPhone schon gesetzt sind, bleiben beim Wiederherstellen erhalten. Die Sicherung ergänzt nur, was fehlt.',
       'Ist die letzte Sicherung älter als vier Wochen, erinnert dich die App nach einem Abruf daran.',
     ],
@@ -173,6 +173,7 @@ export const GUIDE: GuideSection[] = [
     title: 'Sicherheit',
     body: [
       '• Zugangsdaten liegen nur im iOS-Schlüsselbund dieses iPhones, die PIN ist zusätzlich geschützt.',
+      '• App-Sperre: Unter „Zugang verwalten“ → „Schutz“ kannst du die ganze App mit Face ID bzw. dem Geräte-Code sperren.',
       '• Nur lesen: Jeder Aufruf an comdirect wird vor dem Absenden gegen eine feste Liste geprüft. Order-, Überweisungs- und Kontoaufrufe sind gesperrt und verlassen das iPhone nie.',
       '• Nach jedem Abruf macht die App die Anmeldung bei comdirect sofort wieder ungültig.',
       '• Schutz vor Sperre: comdirect sperrt nach 5 TAN-Anfragen ohne Freigabe. Die App zählt mit, warnt früh und blockiert vor der fünften.',

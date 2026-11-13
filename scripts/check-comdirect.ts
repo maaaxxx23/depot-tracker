@@ -10,7 +10,7 @@ import { findIndustry, loadIndustries } from '../src/market/industries';
 import { analyzeOverlap } from '../src/finance/overlap';
 import { assignHoldings, describeFund, matchScore } from '../src/finance/holdingsMatch';
 import { analyzeComposition, companyKey, displayName, UNKNOWN } from '../src/finance/composition';
-import { backupDue, mergeSettings, mergeStored, NO_SETTINGS, parseBackup, parseBackupSettings, serializeBackup } from '../src/data/backupFormat';
+import { backupDue, mergeLists, mergeSettings, mergeStored, NO_LISTS, NO_SETTINGS, parseBackup, parseBackupLists, parseBackupSettings, serializeBackup } from '../src/data/backupFormat';
 import { addCsvTransactions, decodeCsv, germanNumber, instrumentFromText, knownInstrumentIds, parseComdirectCsv, parseDepotCsv } from '../src/data/csvImport';
 import { BENCHMARK, fetchChart, findSymbol, loadMarketData, loadQuotes, needsRefresh, quotesStale } from '../src/market/yahoo';
 
@@ -220,6 +220,25 @@ async function main() {
     check('Sicherung: vorhandene Zielaufteilung bleibt', mergeSettings({ ...NO_SETTINGS, targetShares: { B: 1 } }, { ...NO_SETTINGS, targetShares: { A: 1 } }).targetShares.B === 1);
     check('Sicherung: vorhandenes Ziel bleibt, Fehlendes wird ergänzt', mergedSettings.goal === 50000 && mergedSettings.assumedReturn === 0.07 && mergedSettings.savingsMarks.join() === 'A,B');
     check('Sicherung: keine Zugangsdaten in der Datei', !/clientSecret|pin|username/i.test(serializeBackup(backupStored, 'x')));
+
+    // --- Sicherung: ETF-Listen und Branchen-Zwischenspeicher ---
+    const fundOld = { importedAt: '2026-10-01T00:00:00.000Z', asOf: '2026-09-30', count: 2, sectors: {}, countries: {}, top: [] };
+    const fundNew = { ...fundOld, importedAt: '2026-11-01T00:00:00.000Z' };
+    const lists = { compositions: { IE1: fundOld }, industries: { apple: { industry: 'Consumer Electronics', checkedAt: '2026-10-01' } } };
+    const withLists = serializeBackup(backupStored, 'x', settings, lists);
+    check('Sicherung: ETF-Listen hin und zurück', JSON.stringify(parseBackupLists(withLists)) === JSON.stringify(lists));
+    check('Sicherung: Depotdaten trotz Listen unverändert', JSON.stringify(parseBackup(withLists)) === JSON.stringify(backupStored));
+    check('Sicherung: alte Datei ohne Listen', JSON.stringify(parseBackupLists(serializeBackup(backupStored, 'x'))) === JSON.stringify(NO_LISTS));
+    const mergedLists = mergeLists(
+      { compositions: { IE1: fundOld }, industries: { apple: { industry: null, checkedAt: '2026-09-01' } } },
+      { compositions: { IE1: fundNew, IE2: fundOld }, industries: { apple: { industry: 'Consumer Electronics', checkedAt: '2026-10-01' }, sap: { industry: 'Software', checkedAt: '2026-10-01' } } },
+    );
+    check('Sicherung: neuere ETF-Liste gewinnt, fehlende kommt dazu', mergedLists.compositions.IE1.importedAt === fundNew.importedAt && !!mergedLists.compositions.IE2);
+    check('Sicherung: neuerer Branchen-Eintrag gewinnt', mergedLists.industries.apple.industry === 'Consumer Electronics' && !!mergedLists.industries.sap);
+    const oddLists = parseBackupLists(
+      JSON.stringify({ app: 'depot-tracker', version: 1, lists: { compositions: { X: { top: 'nein' }, Y: fundOld }, industries: { a: 'kaputt', b: { industry: null, checkedAt: '2026-01-01' } } } }),
+    );
+    check('Sicherung: kaputte Listen-Einträge werden verworfen', Object.keys(oddLists.compositions).join() === 'Y' && Object.keys(oddLists.industries).join() === 'b');
     let rejected = 0;
     for (const bad of ['kein json', '{"app":"andere-app"}', '{"app":"depot-tracker","version":99}', '{"app":"depot-tracker","version":1}']) {
       try {

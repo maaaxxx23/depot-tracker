@@ -358,6 +358,9 @@ export function DashboardScreen() {
         onRestored={(next) => {
           setStored(next);
           loadPreferences();
+          // Eine Sicherung kann auch ETF-Listen und Branchen mitbringen
+          compositionStore.get().then(setCompositions).catch(() => {});
+          industryStore.get().then(setIndustries).catch(() => {});
         }}
         onDisconnected={() => {
           setSetup(null);

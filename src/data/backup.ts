@@ -1,10 +1,10 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { mergeSettings, mergeStored, parseBackup, parseBackupSettings, serializeBackup, StoredPortfolio } from './backupFormat';
+import { mergeLists, mergeSettings, mergeStored, parseBackup, parseBackupLists, parseBackupSettings, serializeBackup, StoredPortfolio } from './backupFormat';
 import { addCsvTransactions, decodeCsv, ImportResult, knownInstrumentIds, parseComdirectCsv } from './csvImport';
 import { FundComposition, parseHoldings } from './holdingsImport';
-import { lastBackup, loadSettings, loadStored, replaceStored, saveSettings } from './store';
+import { lastBackup, loadLists, loadSettings, loadStored, replaceStored, saveLists, saveSettings } from './store';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -20,7 +20,7 @@ export async function exportBackup(): Promise<boolean> {
   const file = new File(Paths.cache, name);
   if (file.exists) file.delete();
   file.create();
-  await file.write(serializeBackup(stored, now.toISOString(), await loadSettings()));
+  await file.write(serializeBackup(stored, now.toISOString(), await loadSettings(), await loadLists()));
   try {
     await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Sicherung speichern' });
     // iOS meldet nicht, ob im Teilen-Menü wirklich gespeichert wurde; das Schließen des Menüs zählt als Sicherung
@@ -43,6 +43,8 @@ export async function importBackup(): Promise<StoredPortfolio | null> {
   await replaceStored(merged);
   // Ziel, Rendite und Sparplan-Markierungen: nur ergänzen, was auf dem iPhone fehlt
   await saveSettings(mergeSettings(await loadSettings(), parseBackupSettings(text))).catch(() => {});
+  // ETF-Listen und Branchen: je Eintrag gewinnt der neuere Stand
+  await saveLists(mergeLists(await loadLists(), parseBackupLists(text))).catch(() => {});
   if (file.exists) file.delete();
   return merged;
 }
