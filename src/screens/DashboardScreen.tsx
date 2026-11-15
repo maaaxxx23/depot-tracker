@@ -6,7 +6,7 @@ import { mapPortfolio } from '../comdirect/portfolio';
 import { localDate } from '../comdirect/sync';
 import { backupDue, exportBackup, pickHoldings } from '../data/backup';
 import type { FundComposition } from '../data/holdingsImport';
-import { compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio } from '../data/store';
+import { compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
 import { IndustryCache, loadIndustries } from '../market/industries';
 import { refreshMarket } from '../market/refresh';
 import type { MarketData } from '../market/yahoo';
@@ -38,6 +38,7 @@ import { LoginSheet } from '../ui/components/LoginSheet';
 import { PositionList, positionColor } from '../ui/components/PositionList';
 import { PositionSheet } from '../ui/components/PositionSheet';
 import { SuccessToast } from '../ui/components/SuccessToast';
+import { WelcomeSheet } from '../ui/components/WelcomeSheet';
 import { useShield } from '../ui/AppLock';
 import { dateTime, monthYear } from '../ui/format';
 import { successFeedback } from '../ui/haptics';
@@ -55,7 +56,7 @@ const periodsFor = (asOf: string) => {
   ];
 };
 
-type OpenSheet = 'benchmark' | 'connect' | 'login' | 'help' | 'years' | 'goal' | 'allocation' | 'composition' | null;
+type OpenSheet = 'welcome' | 'benchmark' | 'connect' | 'login' | 'help' | 'years' | 'goal' | 'allocation' | 'composition' | null;
 
 export function DashboardScreen() {
   const { theme, styles } = useStyles();
@@ -113,7 +114,18 @@ export function DashboardScreen() {
 
   // Beim Start: Zugang und letzten comdirect-Abruf laden, sonst Demo-Daten zeigen
   useEffect(() => {
-    loadSetup().then(setSetup).catch(() => {});
+    loadSetup()
+      .then((s) => {
+        setSetup(s);
+        // Erster Start ohne Zugang: einmalige Willkommens-Tour zeigen
+        if (!s) {
+          welcomeSeen
+            .get()
+            .then((seen) => !seen && setSheet('welcome'))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
     loadPreferences();
     compositionStore.get().then(setCompositions).catch(() => {});
     industryStore
@@ -315,6 +327,17 @@ export function DashboardScreen() {
         />
       )}
       {toast && <SuccessToast message={toast} topInset={insets.top} onDone={() => setToast(null)} />}
+      <WelcomeSheet
+        visible={sheet === 'welcome'}
+        onDone={() => {
+          welcomeSeen.set(true).catch(() => {});
+          setSheet(null);
+        }}
+        onHelp={() => {
+          welcomeSeen.set(true).catch(() => {});
+          setSheet('help');
+        }}
+      />
       <HelpSheet visible={sheet === 'help'} onClose={() => setSheet(null)} />
       <CompositionSheet
         visible={sheet === 'composition'}

@@ -34,6 +34,7 @@ const PREFERENCES = {
   autoLock: 'auto-lock-minutes-v1',
   appearance: 'appearance-v1',
   haptics: 'haptics-v1',
+  welcome: 'welcome-seen-v1',
 };
 
 const MAX_SNAPSHOTS = 2000;
@@ -151,6 +152,12 @@ export const withdrawalPreference = {
 export const appLockPreference = {
   get: () => readJson<boolean>(PREFERENCES.appLock, false),
   set: (on: boolean) => AsyncStorage.setItem(PREFERENCES.appLock, JSON.stringify(on)),
+};
+
+/** Wurde die Willkommens-Tour beim ersten Start schon gezeigt? */
+export const welcomeSeen = {
+  get: () => readJson<boolean>(PREFERENCES.welcome, false),
+  set: (seen: boolean) => AsyncStorage.setItem(PREFERENCES.welcome, JSON.stringify(seen)),
 };
 
 /** Haptisches Feedback beim Bestätigen; standardmäßig an. */
