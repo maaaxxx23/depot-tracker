@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ReactNode } from 'react';
+import { ComponentRef, ReactNode, Ref } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ShieldOverlay } from './AppLock';
 import { useTheme } from './theme';
@@ -8,11 +8,13 @@ interface Props {
   visible: boolean;
   title: string;
   onClose: () => void;
+  /** Zugriff auf die ScrollView, z. B. um zu einem Abschnitt zu scrollen */
+  scrollRef?: Ref<ComponentRef<typeof ScrollView>>;
   children: ReactNode;
 }
 
 /** Detailblatt, das von unten hochkommt (auf iOS das native Sheet). */
-export function Sheet({ visible, title, onClose, children }: Props) {
+export function Sheet({ visible, title, onClose, scrollRef, children }: Props) {
   const theme = useTheme();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -25,6 +27,7 @@ export function Sheet({ visible, title, onClose, children }: Props) {
         </View>
         {/* Tastatur schiebt den Inhalt hoch; Wischen nach unten oder Tippen daneben schließt sie */}
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.content}
           automaticallyAdjustKeyboardInsets
           keyboardDismissMode="interactive"

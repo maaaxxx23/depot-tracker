@@ -85,7 +85,7 @@ const TOUR_STEPS = [
   {
     key: 'footer',
     title: 'Verbinden & Hilfe',
-    text: 'Hier verbindest du dein echtes comdirect-Depot – und unter „Anleitung & FAQ“ ist jede Funktion ausführlich erklärt. Viel Spaß beim Erkunden!',
+    text: 'Hier verbindest du dein echtes comdirect-Depot, und unter „Anleitung & FAQ“ ist jede Funktion ausführlich erklärt. „Fertig“ öffnet einmal „Zugang verwalten“ – dort wartet noch ein Sicherheits-Tipp.',
   },
 ];
 
@@ -292,11 +292,21 @@ export function DashboardScreen() {
   const tourTargets = useRef<Record<string, ComponentRef<typeof View> | null>>({});
   const [tourStep, setTourStep] = useState<number | null>(null);
   const [tourRect, setTourRect] = useState<TourRect | null>(null);
+  // Tour-Finale: „Zugang verwalten“ öffnet sich mit hervorgehobenem Schutz-Bereich
+  const [connectHighlight, setConnectHighlight] = useState(false);
   const endTour = () => {
     setTourStep(null);
     setTourRect(null);
   };
-  const nextTourStep = () => setTourStep((s) => (s !== null && s + 1 < TOUR_STEPS.length ? s + 1 : null));
+  const nextTourStep = () => {
+    if (tourStep !== null && tourStep + 1 < TOUR_STEPS.length) {
+      setTourStep(tourStep + 1);
+      return;
+    }
+    endTour();
+    setConnectHighlight(true);
+    setSheet('connect');
+  };
   useEffect(() => {
     if (tourStep === null) return;
     const target = tourTargets.current[TOUR_STEPS[tourStep].key];
@@ -574,7 +584,11 @@ export function DashboardScreen() {
       <ConnectSheet
         visible={sheet === 'connect'}
         setup={setup}
-        onClose={() => setSheet(null)}
+        highlightSchutz={connectHighlight}
+        onClose={() => {
+          setConnectHighlight(false);
+          setSheet(null);
+        }}
         onSaved={(next) => {
           setSetup(next);
           setSheet('login');

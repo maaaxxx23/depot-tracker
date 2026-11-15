@@ -1,6 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, InputAccessoryView, Keyboard, Platform, Pressable, Switch, Text, TextInput, View } from 'react-native';
+import { ComponentRef, useEffect, useRef, useState } from 'react';
+import { Alert, InputAccessoryView, Keyboard, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { clearCredentials, saveCredentials, Setup } from '../../comdirect/credentials';
 import { applyCsv, exportBackup, importBackup, pickDepotCsv } from '../../data/backup';
 import type { StoredPortfolio } from '../../data/backupFormat';
@@ -18,6 +18,8 @@ type TextInputHandle = React.ComponentRef<typeof TextInput>;
 interface Props {
   visible: boolean;
   setup: Setup | null;
+  /** Tour-Finale: zum Schutz-Bereich scrollen und ihn mit Face-ID-Tipp hervorheben */
+  highlightSchutz?: boolean;
   onClose: () => void;
   onSaved: (setup: Setup) => void;
   onDisconnected: () => void;
@@ -39,8 +41,16 @@ function KeyboardBar({ label, onPress }: { label: string; onPress: () => void })
 }
 
 /** Einrichtung des comdirect-Zugangs; alles landet im iOS-Schlüsselbund. */
-export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected, onRestored }: Props) {
+export function ConnectSheet({ visible, setup, highlightSchutz, onClose, onSaved, onDisconnected, onRestored }: Props) {
   const { theme, styles } = useStyles();
+  // Tour-Finale: nach dem Öffnen zum Schutz-Bereich scrollen
+  const sheetScroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const schutzY = useRef(0);
+  useEffect(() => {
+    if (!visible || !highlightSchutz) return;
+    const id = setTimeout(() => sheetScroll.current?.scrollTo({ y: Math.max(0, schutzY.current - 72), animated: true }), 550);
+    return () => clearTimeout(id);
+  }, [visible, highlightSchutz]);
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [username, setUsername] = useState('');
@@ -254,7 +264,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
   );
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="comdirect-Zugang">
+    <Sheet visible={visible} onClose={onClose} title="comdirect-Zugang" scrollRef={sheetScroll}>
       <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4 }]}>Zugangsdaten</Text>
       {setup && !editing ? (
         /* Eingeklappt, solange ein Zugang gespeichert ist: nur Zusammenfassung und Knopf zum Ändern */
@@ -318,8 +328,13 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
         </>
       )}
 
-      <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Schutz</Text>
-      <View style={[styles.card, { gap: 10 }]}>
+      <Text onLayout={(e) => (schutzY.current = e.nativeEvent.layout.y)} style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Schutz</Text>
+      <View style={[styles.card, { gap: 10 }, highlightSchutz && { borderWidth: 2, borderColor: theme.accent }]}>
+        {highlightSchutz && (
+          <Text style={[styles.small, { color: theme.accent, fontWeight: '600' }]}>
+            Tipp aus der Tour: Schalte die Sperre am besten gleich ein – sie schützt App und Zugang mit Face ID.
+          </Text>
+        )}
         <View style={[styles.row, { justifyContent: 'space-between' }]}>
           <Text style={[styles.label, { fontWeight: '600' }]}>Mit Face ID sperren</Text>
           <Switch value={lock} onValueChange={toggleLock} />
