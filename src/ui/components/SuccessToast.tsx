@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { useShield } from '../AppLock';
 import { useStyles } from '../styles';
 
 interface Props {
@@ -13,17 +14,27 @@ interface Props {
 /** Kurze Erfolgs-Einblendung oben: schwebt herein, bleibt zwei Sekunden, löst sich auf. */
 export function SuccessToast({ message, topInset, onDone }: Props) {
   const { theme } = useStyles();
+  const { locked, covered } = useShield();
+  // Solange Sperrbildschirm oder Vorhang davorliegen, wartet die Einblendung –
+  // sonst liefe sie unsichtbar ab, etwa während der Code-Eingabe nach einem App-Wechsel
+  const blocked = locked || covered;
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
+    if (blocked) {
+      progress.setValue(0);
+      return;
+    }
+    const sequence = Animated.sequence([
       Animated.timing(progress, { toValue: 1, duration: 250, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.delay(2000),
       Animated.timing(progress, { toValue: 0, duration: 300, easing: Easing.in(Easing.ease), useNativeDriver: true }),
-    ]).start(({ finished }) => finished && onDone());
-    // Nur beim Erscheinen starten; onDone ändert sich mit jedem Render des Dashboards
+    ]);
+    sequence.start(({ finished }) => finished && onDone());
+    return () => sequence.stop();
+    // onDone ändert sich mit jedem Render des Dashboards, soll die Sequenz aber nicht neu starten
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [blocked]);
 
   return (
     <Animated.View

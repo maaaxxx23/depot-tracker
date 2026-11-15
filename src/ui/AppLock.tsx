@@ -12,6 +12,11 @@ import { useStyles } from './styles';
  */
 const ShieldContext = createContext<{ locked: boolean; covered: boolean; unlock: () => void }>({ locked: false, covered: false, unlock: () => {} });
 
+/** Ist die App gerade verdeckt (gesperrt oder hinter dem Vorhang)? Z. B. für Einblendungen, die warten sollen. */
+export function useShield() {
+  return useContext(ShieldContext);
+}
+
 /** Blickdichte Abdeckung für ein Modal: schwarzer Vorhang bzw. Sperrbildschirm. */
 export function ShieldOverlay() {
   const { locked, covered, unlock } = useContext(ShieldContext);
