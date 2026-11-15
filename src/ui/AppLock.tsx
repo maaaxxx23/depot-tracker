@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, AppState, Easing, Image, Pressable, Text, View } from 'react-native';
+import { Animated, AppState, Easing, Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { appLockPreference, autoLockPreference } from '../data/store';
 import { useStyles } from './styles';
 
@@ -25,21 +25,23 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   lockedRef.current = locked;
   const authenticating = useRef(false);
   // Vorhang, solange die App nicht aktiv im Vordergrund ist (auch in der Multitasking-Ansicht).
-  // Er blendet schnell ein (bevor iOS die Vorschau aufnimmt) und sanft wieder aus.
+  // Zwei schwarze Hälften laufen wie ein Theatervorhang zusammen: schnell zu (bevor iOS die
+  // Vorschau aufnimmt), gemächlich wieder auf.
+  const { width } = useWindowDimensions();
   const [coverMounted, setCoverMounted] = useState(AppState.currentState !== 'active');
-  const coverOpacity = useRef(new Animated.Value(AppState.currentState !== 'active' ? 1 : 0)).current;
+  const coverProgress = useRef(new Animated.Value(AppState.currentState !== 'active' ? 1 : 0)).current;
   const setCovered = useCallback(
     (show: boolean) => {
       if (show) {
         setCoverMounted(true);
-        Animated.timing(coverOpacity, { toValue: 1, duration: 120, easing: Easing.out(Easing.ease), useNativeDriver: true }).start();
+        Animated.timing(coverProgress, { toValue: 1, duration: 140, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       } else {
-        Animated.timing(coverOpacity, { toValue: 0, duration: 300, easing: Easing.inOut(Easing.ease), useNativeDriver: true }).start(({ finished }) => {
+        Animated.timing(coverProgress, { toValue: 0, duration: 380, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(({ finished }) => {
           if (finished) setCoverMounted(false);
         });
       }
     },
-    [coverOpacity],
+    [coverProgress],
   );
   const lastTouch = useRef(Date.now());
 
@@ -134,22 +136,46 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     <View style={{ flex: 1 }}>
       {content}
       {coverMounted && (
-        <Animated.View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: '#000',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: coverOpacity,
-          }}
-        >
-          <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
-        </Animated.View>
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
+          {/* Linke und rechte Vorhanghälfte; 1 px Überlappung, damit in der Mitte kein Spalt bleibt */}
+          <Animated.View
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: width / 2 + 1,
+              backgroundColor: '#000',
+              transform: [{ translateX: coverProgress.interpolate({ inputRange: [0, 1], outputRange: [-(width / 2 + 1), 0] }) }],
+            }}
+          />
+          <Animated.View
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: width / 2 + 1,
+              backgroundColor: '#000',
+              transform: [{ translateX: coverProgress.interpolate({ inputRange: [0, 1], outputRange: [width / 2 + 1, 0] }) }],
+            }}
+          />
+          {/* Das Symbol erscheint erst, wenn der Vorhang fast geschlossen ist */}
+          <Animated.View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: coverProgress.interpolate({ inputRange: [0.75, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
+            }}
+          >
+            <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
+          </Animated.View>
+        </View>
       )}
     </View>
   );
