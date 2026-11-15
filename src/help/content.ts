@@ -175,7 +175,7 @@ export const GUIDE: GuideSection[] = [
     body: [
       '• Zugangsdaten liegen nur im iOS-Schlüsselbund dieses iPhones, die PIN ist zusätzlich geschützt.',
       '• App-Sperre: Unter „Zugang verwalten“ → „Schutz“ kannst du die ganze App mit Face ID bzw. dem Geräte-Code sperren – auf Wunsch auch automatisch, wenn die offene App 1, 5 oder 15 Minuten nicht berührt wird.',
-      '• Blickschutz: Sobald die App in den App-Wechsler oder in den Hintergrund geht, zeigt sie nur noch ihr Symbol auf schwarzem Grund. So verrät die iOS-Vorschau keine Beträge.',
+      '• Blickschutz: Sobald die App in den App-Wechsler oder in den Hintergrund geht, zeigt sie nur noch ihr Symbol auf neutralem Grund im Farbschema der App. So verrät die iOS-Vorschau keine Beträge.',
       '• Nur lesen: Jeder Aufruf an comdirect wird vor dem Absenden gegen eine feste Liste geprüft. Order-, Überweisungs- und Kontoaufrufe sind gesperrt und verlassen das iPhone nie.',
       '• Nach jedem Abruf macht die App die Anmeldung bei comdirect sofort wieder ungültig.',
       '• Schutz vor Sperre: comdirect sperrt nach 5 TAN-Anfragen ohne Freigabe. Die App zählt mit, warnt früh und blockiert vor der fünften.',

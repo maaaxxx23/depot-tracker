@@ -30,7 +30,7 @@ export function ShieldOverlay() {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: covered ? '#000' : theme.background,
+        backgroundColor: theme.background,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 14,
@@ -225,7 +225,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
               bottom: 0,
               left: 0,
               width: width / 2 + 1,
-              backgroundColor: '#000',
+              backgroundColor: theme.background,
               transform: [{ translateX: coverProgress.interpolate({ inputRange: [0, 1], outputRange: [-(width / 2 + 1), 0] }) }],
             }}
           />
@@ -236,7 +236,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
               bottom: 0,
               right: 0,
               width: width / 2 + 1,
-              backgroundColor: '#000',
+              backgroundColor: theme.background,
               transform: [{ translateX: coverProgress.interpolate({ inputRange: [0, 1], outputRange: [width / 2 + 1, 0] }) }],
             }}
           />
