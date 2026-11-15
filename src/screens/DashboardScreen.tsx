@@ -272,8 +272,8 @@ export function DashboardScreen() {
         <Text style={[styles.small, { textAlign: 'center', marginTop: 4 }]}>
           {data.source.kind === 'comdirect'
             ? holdingsFrom
-              ? `Bestand: comdirect, ${dateTime(holdingsFrom)} · Kurse: Yahoo, ${dateTime(updatedAt)}`
-              : `comdirect · Stand ${dateTime(updatedAt)}${data.benchmark ? ' · Kursverlauf: Yahoo' : ''}`
+              ? `Bestand: comdirect, ${dateTime(holdingsFrom)} · Kurse: Stand ${dateTime(updatedAt)}`
+              : `comdirect · Stand ${dateTime(updatedAt)}`
             : 'Demo-Daten'}
         </Text>
         <View style={{ flexDirection: 'row', alignSelf: 'center', alignItems: 'center' }}>

@@ -88,7 +88,7 @@ export function VisitBanner({ content, onDone }: { content: VisitBannerContent; 
                 {content.sample
                   ? 'Demo-Daten: erfundene Zahlen zur Ansicht'
                   : content.estimate
-                    ? 'Kursbewegung deiner Anteile, mit Yahoo-Kursen geschätzt'
+                    ? 'Kursbewegung deiner Anteile, geschätzt'
                     : 'Kursbewegung deiner Anteile, ohne Ein- und Auszahlungen'}
               </Text>
             </>
