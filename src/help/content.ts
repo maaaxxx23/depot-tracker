@@ -38,7 +38,7 @@ export const GUIDE: GuideSection[] = [
     body: [
       '1. Schalte im comdirect-Onlinebanking den API-Zugang frei. Du bekommst eine Client ID und ein Client Secret.',
       '2. Tippe in der App ganz unten auf „comdirect verbinden“ bzw. „Zugang verwalten“.',
-      '3. Gib Client ID, Client Secret, deine 8-stellige Zugangsnummer und deine 6-stellige PIN ein und tippe auf „Speichern“.',
+      '3. Gib Client ID, Client Secret, deine 8-stellige Zugangsnummer und deine Online-Banking-PIN bzw. dein Passwort ein und tippe auf „Speichern“.',
       '4. Bestätige die Anmeldung in der photoTAN-App. Danach lädt die App Positionen und Umsätze.',
       'Alles wird nur im Schlüsselbund dieses iPhones gespeichert.',
     ],

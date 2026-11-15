@@ -132,7 +132,9 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
     autoLockPreference.set(minutes).catch(() => {});
   };
 
-  const complete = clientId.trim() && clientSecret.trim() && /^\d{8}$/.test(username.trim()) && (setup || /^\d{6}$/.test(pin));
+  // PIN/Passwort: comdirect erlaubt neben der klassischen 6-stelligen PIN auch längere
+  // Passwörter mit Buchstaben – deshalb nur Mindestlänge prüfen, nichts wegfiltern
+  const complete = clientId.trim() && clientSecret.trim() && /^\d{8}$/.test(username.trim()) && (setup || pin.length >= 6);
 
   const save = async () => {
     tapFeedback();
@@ -306,8 +308,21 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
           )}
           {field(
             'PIN',
-            setup ? 'Leer lassen, um die gespeicherte PIN zu behalten' : 'Deine 6-stellige Onlinebanking-PIN von comdirect.de; wird mit Face ID geschützt',
-            <TextInput ref={pinRef} style={input} value={pin} onChangeText={(v) => setPin(v.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" secureTextEntry textContentType="password" inputAccessoryViewID={ACCESSORY_DONE} />,
+            setup ? 'Leer lassen, um die gespeicherte PIN zu behalten' : 'Deine Onlinebanking-PIN bzw. dein Passwort von comdirect.de; wird mit Face ID geschützt',
+            <TextInput
+              ref={pinRef}
+              style={input}
+              value={pin}
+              // Nur Leerzeichen und Zeilenumbrüche entfernen (Reste vom Einfügen); Buchstaben
+              // und Sonderzeichen gehören bei comdirect-Passwörtern dazu
+              onChangeText={(v) => setPin(v.replace(/\s/g, '').slice(0, 64))}
+              keyboardType="default"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+              textContentType="password"
+              inputAccessoryViewID={ACCESSORY_DONE}
+            />,
           )}
 
           {/* Der Ziffernblock hat keine Eingabetaste: Leiste über der Tastatur für Weiter/Fertig */}
