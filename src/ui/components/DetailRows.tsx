@@ -12,8 +12,6 @@ export interface DetailRow {
   labelColor?: string;
   /** Wert im Privatsphäre-Modus weichzeichnen */
   private?: boolean;
-  /** Wert zurückhaltend darstellen (grau, nicht fett), wenn die Bezeichnung die Hauptinformation ist */
-  quiet?: boolean;
   /** Spielerei: Der Wert läuft Zeichen für Zeichen durch diese Farben (nicht im Privatsphäre-Modus) */
   valueColors?: string[];
 }
@@ -40,7 +38,7 @@ export function DetailRows({ rows }: { rows: DetailRow[] }) {
   return (
     <View style={[styles.card, { gap: 0, paddingVertical: 4 }]}>
       {rows.map((r, i) => {
-        const valueStyle = [styles.text, styles.number, r.quiet ? { color: r.color ?? theme.muted } : { fontWeight: '600' as const, color: r.color ?? theme.text }];
+        const valueStyle = [styles.text, styles.number, { fontWeight: '600' as const, color: r.color ?? theme.text }];
         return (
           <View key={r.label} style={[styles.row, { justifyContent: 'space-between', paddingVertical: 12, gap: 12 }, i > 0 && styles.divider]}>
             <View style={{ flex: 1, flexShrink: 1, gap: 2 }}>

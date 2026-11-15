@@ -50,7 +50,7 @@ function Bars({ slices, color }: { slices: Slice[]; color: string }) {
         <View key={s.label} style={{ gap: 5 }}>
           <View style={[styles.row, { justifyContent: 'space-between', gap: 12 }]}>
             <Text style={[styles.text, { flex: 1 }]}>{s.label}</Text>
-            <Text style={[styles.text, styles.number, { color: theme.muted }]}>{percent(s.weight)}</Text>
+            <Text style={[styles.text, styles.number, { fontWeight: '600' }]}>{percent(s.weight)}</Text>
           </View>
           <View style={{ height: 6, borderRadius: 3, backgroundColor: theme.chip, overflow: 'hidden' }}>
             <View style={{ width: `${(s.weight / max) * 100}%`, height: 6, borderRadius: 3, backgroundColor: color }} />
@@ -175,10 +175,8 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
           <DetailRows
             rows={result.companies.map((c, i) => ({
               label: `${i + 1}. ${c.label}`,
-              labelColor: theme.text,
               hint: `${c.country} · ${industryOf(c.key) ? industryInfo(industryOf(c.key)!).label : c.sector}${c.sources > 1 ? ` · in ${c.sources} deiner Wertpapiere` : ''}`,
               value: percent(c.weight),
-              quiet: true,
             }))}
           />
 
@@ -190,7 +188,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
                   <View key={a.label} style={[{ paddingVertical: 12, gap: 3 }, i > 0 && styles.divider]}>
                     <View style={[styles.row, { justifyContent: 'space-between', gap: 12 }]}>
                       <Text style={[styles.text, { flex: 1, fontWeight: '600' }]}>{a.label}</Text>
-                      <Text style={[styles.text, styles.number, { color: theme.muted }]}>{percent(a.weight)}</Text>
+                      <Text style={[styles.text, styles.number, { fontWeight: '600' }]}>{percent(a.weight)}</Text>
                     </View>
                     {a.explain ? <Text style={styles.small}>{a.explain}</Text> : null}
                     <Text style={[styles.small, { color: theme.text }]}>{a.companies.slice(0, 4).join(', ')}{a.companies.length > 4 ? ` und ${a.companies.length - 4} weitere` : ''}</Text>
