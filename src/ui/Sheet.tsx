@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ShieldOverlay } from './AppLock';
 import { useTheme } from './theme';
 
 interface Props {
@@ -31,6 +32,9 @@ export function Sheet({ visible, title, onClose, children }: Props) {
         >
           {children}
         </ScrollView>
+        {/* Blätter sind native Modals und liegen über den Overlays der App:
+            Sperre und Vorhang decken sie deshalb hier selbst ab */}
+        <ShieldOverlay />
       </View>
     </Modal>
   );

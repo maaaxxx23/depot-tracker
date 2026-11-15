@@ -1,9 +1,54 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Easing, Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { appLockPreference, autoLockPreference } from '../data/store';
 import { useStyles } from './styles';
+
+/**
+ * Sperr- und Vorhang-Zustand für Stellen außerhalb des normalen Baums: Die Detailblätter
+ * sind native Modals und liegen ÜBER den Overlays der App, deshalb decken sie sich über
+ * ShieldOverlay selbst ab.
+ */
+const ShieldContext = createContext<{ locked: boolean; covered: boolean; unlock: () => void }>({ locked: false, covered: false, unlock: () => {} });
+
+/** Blickdichte Abdeckung für ein Modal: schwarzer Vorhang bzw. Sperrbildschirm. */
+export function ShieldOverlay() {
+  const { locked, covered, unlock } = useContext(ShieldContext);
+  const { theme } = useStyles();
+  if (!locked && !covered) return null;
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: covered ? '#000' : theme.background,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 14,
+      }}
+    >
+      {covered ? (
+        <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
+      ) : (
+        <>
+          <Ionicons name="lock-closed-outline" size={40} color={theme.muted} />
+          <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
+          <Pressable
+            onPress={unlock}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
+          >
+            <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
+          </Pressable>
+        </>
+      )}
+    </View>
+  );
+}
 
 /** So oft prüft die App, ob die Auto-Sperre fällig ist. */
 const AUTO_LOCK_CHECK_MS = 10000;
@@ -118,39 +163,53 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [lockWithCurtain]);
 
-  const content =
-    locked === false ? (
-      // Fängt keine Berührung ab, merkt sich nur ihren Zeitpunkt für die Auto-Sperre
+  return (
+    <ShieldContext.Provider value={{ locked: locked !== false, covered: coverMounted, unlock }}>
+    <View style={{ flex: 1 }}>
+      {/* Die App bleibt auch gesperrt im Hintergrund am Leben, damit z. B. eine laufende
+          comdirect-Anmeldung den Wechsel zur photoTAN-App überlebt. Der Sperrbildschirm
+          legt sich nur blickdicht darüber. Berührungen werden nicht abgefangen, nur ihr
+          Zeitpunkt für die Auto-Sperre gemerkt. */}
       <View
         style={{ flex: 1 }}
         onStartShouldSetResponderCapture={() => {
           lastTouch.current = Date.now();
           return false;
         }}
+        accessibilityElementsHidden={locked !== false}
+        importantForAccessibility={locked !== false ? 'no-hide-descendants' : 'auto'}
       >
         {children}
       </View>
-    ) : (
-      <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-        {locked && (
-          <>
-            <Ionicons name="lock-closed-outline" size={40} color={theme.muted} />
-            <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
-            <Pressable
-              onPress={unlock}
-              accessibilityRole="button"
-              style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
-            >
-              <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
-            </Pressable>
-          </>
-        )}
-      </View>
-    );
-
-  return (
-    <View style={{ flex: 1 }}>
-      {content}
+      {locked !== false && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: theme.background,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 14,
+          }}
+        >
+          {locked && (
+            <>
+              <Ionicons name="lock-closed-outline" size={40} color={theme.muted} />
+              <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
+              <Pressable
+                onPress={unlock}
+                accessibilityRole="button"
+                style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
+              >
+                <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      )}
       {coverMounted && (
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
           {/* Linke und rechte Vorhanghälfte; 1 px Überlappung, damit in der Mitte kein Spalt bleibt */}
@@ -194,5 +253,6 @@ export function AppLock({ children }: { children: React.ReactNode }) {
         </View>
       )}
     </View>
+    </ShieldContext.Provider>
   );
 }
