@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { withdrawalPreference } from '../../data/store';
 import { GoalProjection, MAX_RETURN, RETURN_STEP, Savings } from '../../finance/savings';
 import {
@@ -97,23 +98,35 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
   const consume = capitalToConsume(drawMonthly, annualReturn, years);
 
   /**
-   * Übernehmen-Knopf: beide gleich gestaltet, damit keiner „aktiv“ wirkt. Ist der Betrag
-   * gerade das gespeicherte Ziel, zeigt ein Haken im Knopf die Rückmeldung.
+   * Übernehmen-Knopf im Auswahl-Stil: Der Betrag, der gerade das gespeicherte Ziel ist,
+   * füllt seinen Knopf blau – wie bei einer gewählten Option. Beim Drücken gibt es ein
+   * feines haptisches Tick.
    */
   const adoptButton = (label: string, capital: number, accessibility: string) => {
     const adopted = goal !== null && Math.round(goal) === roundCapital(capital);
     return (
       <Pressable
-        onPress={() => onChangeGoal(roundCapital(capital))}
+        onPress={() => {
+          Haptics.selectionAsync().catch(() => {});
+          onChangeGoal(roundCapital(capital));
+        }}
         accessibilityRole="button"
         accessibilityLabel={accessibility}
         accessibilityState={{ selected: adopted }}
-        style={({ pressed }) => ({ flex: 1, borderColor: theme.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+        style={({ pressed }) => ({
+          flex: 1,
+          backgroundColor: adopted ? theme.accent : 'transparent',
+          borderColor: theme.accent,
+          borderWidth: 1,
+          borderRadius: 12,
+          paddingVertical: 13,
+          paddingHorizontal: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.6 : 1,
+        })}
       >
-        <View style={[styles.row, { gap: 5, justifyContent: 'center' }]}>
-          {adopted && <Ionicons name="checkmark-circle" size={17} color={theme.accent} />}
-          <Text style={{ color: theme.accent, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
-        </View>
+        <Text style={{ color: adopted ? '#fff' : theme.accent, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
       </Pressable>
     );
   };
@@ -280,7 +293,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
             {preserve !== null && adoptButton('Kapitalerhalt als Ziel', preserve, 'Kapitalerhalt-Depot als Wunschbetrag übernehmen')}
             {consume !== null && adoptButton('Verzehr als Ziel', consume, `Verzehr-Depot über ${years} Jahre als Wunschbetrag übernehmen`)}
           </View>
-          <Text style={[styles.small, { paddingHorizontal: 4 }]}>Übernimmt den jeweiligen Betrag als Wunschbetrag für dein Depot; der Haken zeigt, welcher gerade dein Ziel ist.</Text>
+          <Text style={[styles.small, { paddingHorizontal: 4 }]}>Übernimmt den jeweiligen Betrag als Wunschbetrag für dein Depot; der gefüllte Knopf zeigt, welcher gerade dein Ziel ist.</Text>
         </>
       )}
       {drawMonthly > 0 && (
