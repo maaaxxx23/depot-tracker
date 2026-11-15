@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { chartModePreference } from '../../data/store';
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SeriesPoint } from '../../finance/performance';
 import { compactEur, eur, monthYear, pct } from '../format';
@@ -20,6 +19,9 @@ interface Props {
   historyHint: string | null;
   /** Vergleich mit dem Index am Fuß der Karte; null blendet die Zeile aus */
   benchmark: { irr: number | null; benchmarkIrr: number | null; name: string; onPress: () => void } | null;
+  /** Wert in Euro oder zeitgewichtete Rendite in Prozent (Käufe/Verkäufe verschieben die Linie dann nicht) */
+  mode: 'value' | 'return';
+  onModeChange: (mode: 'value' | 'return') => void;
   onPeriodChange: (index: number) => void;
 }
 
@@ -27,20 +29,10 @@ const HEADER_HEIGHT = 22;
 
 const Dot = ({ color }: { color: string }) => <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />;
 
-export function ChartCard({ series, benchmarkName, periods, periodIndex, available, historyHint, benchmark, onPeriodChange }: Props) {
+export function ChartCard({ series, benchmarkName, periods, periodIndex, available, historyHint, benchmark, mode, onModeChange, onPeriodChange }: Props) {
   const { theme, styles } = useStyles();
   const { hidden } = usePrivacy();
   const [active, setActive] = useState<number | null>(null);
-  // Wert in Euro oder zeitgewichtete Rendite in Prozent (Käufe/Verkäufe verschieben die Linie dann nicht)
-  const [mode, setModeState] = useState<'value' | 'return'>('value');
-  // Letzte Wahl merken
-  useEffect(() => {
-    chartModePreference.get().then(setModeState).catch(() => {});
-  }, []);
-  const setMode = (next: 'value' | 'return') => {
-    setModeState(next);
-    chartModePreference.set(next).catch(() => {});
-  };
   const asReturn = mode === 'return';
   const point = active !== null ? series[active] : null;
 
@@ -145,7 +137,7 @@ export function ChartCard({ series, benchmarkName, periods, periodIndex, availab
         {(['value', 'return'] as const).map((m) => (
           <Pressable
             key={m}
-            onPress={() => setMode(m)}
+            onPress={() => onModeChange(m)}
             accessibilityLabel={m === 'value' ? 'Wert in Euro' : 'Rendite in Prozent'}
             accessibilityState={{ selected: mode === m }}
             style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: mode === m ? theme.card : 'transparent' }}

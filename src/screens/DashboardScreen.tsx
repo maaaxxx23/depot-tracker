@@ -6,7 +6,7 @@ import { mapPortfolio } from '../comdirect/portfolio';
 import { localDate } from '../comdirect/sync';
 import { backupDue, exportBackup, pickHoldings } from '../data/backup';
 import type { FundComposition } from '../data/holdingsImport';
-import { compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
+import { chartModePreference, compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
 import { IndustryCache, loadIndustries } from '../market/industries';
 import { refreshMarket } from '../market/refresh';
 import type { MarketData } from '../market/yahoo';
@@ -125,6 +125,12 @@ export function DashboardScreen() {
   const [goal, setGoal] = useState<number | null>(null);
   // Kurze Erfolgs-Einblendung nach einer abgeschlossenen Aktualisierung
   const [toast, setToast] = useState<string | null>(null);
+  // Chart-Ansicht: Wert in Euro oder Rendite in Prozent; letzte Wahl bleibt gespeichert
+  const [chartMode, setChartMode] = useState<'value' | 'return'>('value');
+  const changeChartMode = (next: 'value' | 'return') => {
+    setChartMode(next);
+    chartModePreference.set(next).catch(() => {});
+  };
   const [annualReturn, setAnnualReturn] = useState(DEFAULT_RETURN);
   const [marks, setMarks] = useState<string[]>([]);
   const [targets, setTargets] = useState<TargetShares>({});
@@ -160,6 +166,7 @@ export function DashboardScreen() {
       })
       .catch(() => {});
     loadPreferences();
+    chartModePreference.get().then(setChartMode).catch(() => {});
     compositionStore.get().then(setCompositions).catch(() => {});
     industryStore
       .get()
@@ -348,24 +355,42 @@ export function DashboardScreen() {
         }, 3600),
       );
     } else if (key === 'chart') {
-      // Einmal von links nach rechts durch alle verfügbaren Zeiträume, dann zurück
-      const previous = activeIndex;
+      // Einmal von links nach rechts durch alle verfügbaren Zeiträume, zurück,
+      // dann der Euro/Prozent-Umschalter einmal hin und wieder her
+      const previousPeriod = activeIndex;
+      const previousMode = chartMode;
+      const restore = () => {
+        setPeriodIndex(previousPeriod);
+        changeChartMode(previousMode);
+      };
       let at = 2000;
       periods.forEach((_, i) => {
-        if (!available[i] || i === previous) return;
+        if (!available[i] || i === previousPeriod) return;
         timers.push(
           setTimeout(() => {
             setPeriodIndex(i);
-            undo = () => setPeriodIndex(previous);
+            undo = restore;
           }, at),
         );
         at += 1500;
       });
       timers.push(
         setTimeout(() => {
-          setPeriodIndex(previous);
-          undo = null;
+          setPeriodIndex(previousPeriod);
+          undo = restore;
         }, at + 200),
+      );
+      timers.push(
+        setTimeout(() => {
+          changeChartMode(previousMode === 'value' ? 'return' : 'value');
+          undo = restore;
+        }, at + 1500),
+      );
+      timers.push(
+        setTimeout(() => {
+          changeChartMode(previousMode);
+          undo = null;
+        }, at + 3200),
       );
     }
     return () => {
@@ -420,6 +445,8 @@ export function DashboardScreen() {
             periodIndex={activeIndex}
             available={available}
             historyHint={available.every(Boolean) ? null : `Umsätze von comdirect reichen bis ${monthYear(first)} zurück`}
+            mode={chartMode}
+            onModeChange={changeChartMode}
             onPeriodChange={setPeriodIndex}
           />
         </View>
