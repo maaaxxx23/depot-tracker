@@ -19,6 +19,23 @@ samt Entnahme-Rechner, Positionen mit Zielaufteilung – und was wirklich in den
 - **Keine Anlageberatung.** Alle Hochrechnungen (Sparziel, Entnahme) sind als neutrale
   Modellrechnungen formuliert.
 
+## Warum TypeScript/Expo statt Swift?
+
+Eine bewusste, pragmatische Entscheidung:
+
+- **Entwickelt wird auf Windows.** Swift braucht Xcode, Xcode braucht einen Mac. Mit Expo
+  entsteht die iOS-App komplett ohne Mac: entwickelt auf dem PC, gebaut in der Expo-Cloud
+  (EAS), verteilt über TestFlight.
+- **Iterationstempo.** Über Expo Go ist jede Änderung Sekunden später auf dem iPhone, ohne
+  Build-Schritt. Die App ist in vielen kleinen Iterationen direkt am Gerät entstanden.
+- **Der Kern ist Rechenlogik.** Finanzmathematik, API-Aufrufe, eine Seite UI – dafür reicht
+  React Native locker; die Animationen laufen über den nativen Treiber. TypeScript sichert
+  die Rechenlogik ab, und die Testskripte laufen mit Node direkt auf dem PC.
+
+Grenze des Ansatzes: Features, die natives iOS verlangen (z. B. ein Home-Screen-Widget),
+bräuchten ein natives Zusatzmodul. Dafür bliebe mit derselben Codebasis der Weg zu einer
+Android-Version offen.
+
 ## Entwicklung starten
 
 Voraussetzungen: Node ≥ 20, ein iPhone mit Expo Go (die App wird nur auf iOS getestet).
