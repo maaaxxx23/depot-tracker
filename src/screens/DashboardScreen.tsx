@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState, Pressable, ScrollView, Text, View } from 'react-native';
+import { ComponentRef, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, AppState, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadSetup, Setup } from '../comdirect/credentials';
 import { mapPortfolio } from '../comdirect/portfolio';
@@ -38,6 +38,7 @@ import { LoginSheet } from '../ui/components/LoginSheet';
 import { PositionList, positionColor } from '../ui/components/PositionList';
 import { PositionSheet } from '../ui/components/PositionSheet';
 import { SuccessToast } from '../ui/components/SuccessToast';
+import { TourOverlay, TourRect } from '../ui/components/TourOverlay';
 import { WelcomeSheet } from '../ui/components/WelcomeSheet';
 import { useShield } from '../ui/AppLock';
 import { dateTime, monthYear } from '../ui/format';
@@ -57,6 +58,35 @@ const periodsFor = (asOf: string) => {
 };
 
 type OpenSheet = 'welcome' | 'benchmark' | 'connect' | 'login' | 'help' | 'years' | 'goal' | 'allocation' | 'composition' | null;
+
+/** Stationen der Spotlight-Tour über dem Demo-Depot. */
+const TOUR_STEPS = [
+  {
+    key: 'hero',
+    title: 'Dein Depotwert',
+    text: 'Die große Zahl ist der aktuelle Wert deines Depots. Ein „≈“ davor heißt: mit aktuellen Kursen geschätzt. Das Auge verbirgt alle Beträge, der Pfeil daneben aktualisiert über comdirect.',
+  },
+  {
+    key: 'chart',
+    title: 'Verlauf & Vergleich',
+    text: 'Der Chart zeigt die Entwicklung im gewählten Zeitraum – oben wechselst du ihn. Die blaue Linie vergleicht dein Depot mit dem MSCI World.',
+  },
+  {
+    key: 'saving',
+    title: 'Sparen, Ziel & Jahre',
+    text: 'Links deine monatliche Sparrate und der Fortschritt zu deinem Wunschbetrag, samt Entnahme-Rechner. Rechts die Rendite der einzelnen Jahre. Antippen öffnet die Details.',
+  },
+  {
+    key: 'positions',
+    title: 'Deine Positionen',
+    text: 'Jede Position hat ihre eigene Farbe, der Balken zeigt die Gewichtung. Über „Zielaufteilung“ legst du Wunschanteile fest, und die App weist auf Abweichungen hin.',
+  },
+  {
+    key: 'footer',
+    title: 'Verbinden & Hilfe',
+    text: 'Hier verbindest du dein echtes comdirect-Depot – und unter „Anleitung & FAQ“ ist jede Funktion ausführlich erklärt. Viel Spaß beim Erkunden!',
+  },
+];
 
 export function DashboardScreen() {
   const { theme, styles } = useStyles();
@@ -245,6 +275,55 @@ export function DashboardScreen() {
       })
       .catch(() => {});
   };
+  // --- Spotlight-Tour: scrollt zur Station, misst sie und stanzt sie aus dem Dunkel aus ---
+  const { height: windowHeight } = useWindowDimensions();
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const scrollYRef = useRef(0);
+  const tourTargets = useRef<Record<string, ComponentRef<typeof View> | null>>({});
+  const [tourStep, setTourStep] = useState<number | null>(null);
+  const [tourRect, setTourRect] = useState<TourRect | null>(null);
+  const endTour = () => {
+    setTourStep(null);
+    setTourRect(null);
+  };
+  const nextTourStep = () => setTourStep((s) => (s !== null && s + 1 < TOUR_STEPS.length ? s + 1 : null));
+  useEffect(() => {
+    if (tourStep === null) return;
+    setTourRect(null);
+    const target = tourTargets.current[TOUR_STEPS[tourStep].key];
+    if (!target) {
+      // Station fehlt (sollte im Demo-Depot nicht vorkommen): einfach weiter
+      nextTourStep();
+      return;
+    }
+    let cancelled = false;
+    const apply = (x: number, y: number, w: number, h: number) => {
+      if (!cancelled) setTourRect({ x, y, width: w, height: h });
+    };
+    const id = setTimeout(() => {
+      target.measureInWindow((x, y, w, h) => {
+        if (cancelled) return;
+        // Station so scrollen, dass sie samt Textblase sichtbar ist
+        const desiredTop = insets.top + 56;
+        const maxBottom = windowHeight - 230;
+        let delta = 0;
+        if (y < desiredTop) delta = y - desiredTop;
+        else if (y + h > maxBottom) delta = Math.min(y - desiredTop, y + h - maxBottom);
+        if (Math.abs(delta) > 4) {
+          scrollRef.current?.scrollTo({ y: Math.max(0, scrollYRef.current + delta), animated: true });
+          setTimeout(() => !cancelled && target.measureInWindow(apply), 420);
+        } else {
+          apply(x, y, w, h);
+        }
+      });
+    }, 80);
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourStep]);
+
   useEffect(() => {
     if (!backupReminder || shieldLocked || shieldCovered) return;
     const id = setTimeout(() => {
@@ -260,52 +339,66 @@ export function DashboardScreen() {
   return (
     <>
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1, backgroundColor: theme.background }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 32, gap: 12 }}
+        onScroll={(e) => {
+          scrollYRef.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={32}
+        scrollEnabled={tourStep === null}
       >
-        <Hero
-          demo={data.source.kind !== 'comdirect'}
-          value={result.endValue}
-          gain={result.gain}
-          irr={result.irr}
-          periodLabel={period.long}
-          updatedAt={updatedAt}
-          holdingsFrom={holdingsFrom}
-          sinceBuy={sinceBuy}
-          onPreviewVisit={() => visit.show(result.endValue)}
-          onRefresh={() => setSheet(setup ? 'login' : 'connect')}
-        />
-        <ChartCard series={series} benchmarkName={data.benchmark?.name ?? null}
-          benchmark={result.benchmark && data.benchmark ? { irr: result.irr, benchmarkIrr: result.benchmark.irr, name: data.benchmark.name, onPress: () => setSheet('benchmark') } : null}
-          periods={periods}
-          periodIndex={activeIndex}
-          available={available}
-          historyHint={available.every(Boolean) ? null : `Umsätze von comdirect reichen bis ${monthYear(first)} zurück`}
-          onPeriodChange={setPeriodIndex}
-        />
+        <View ref={(r) => void (tourTargets.current.hero = r)} collapsable={false}>
+          <Hero
+            demo={data.source.kind !== 'comdirect'}
+            value={result.endValue}
+            gain={result.gain}
+            irr={result.irr}
+            periodLabel={period.long}
+            updatedAt={updatedAt}
+            holdingsFrom={holdingsFrom}
+            sinceBuy={sinceBuy}
+            onPreviewVisit={() => visit.show(result.endValue)}
+            onRefresh={() => setSheet(setup ? 'login' : 'connect')}
+          />
+        </View>
+        <View ref={(r) => void (tourTargets.current.chart = r)} collapsable={false}>
+          <ChartCard series={series} benchmarkName={data.benchmark?.name ?? null}
+            benchmark={result.benchmark && data.benchmark ? { irr: result.irr, benchmarkIrr: result.benchmark.irr, name: data.benchmark.name, onPress: () => setSheet('benchmark') } : null}
+            periods={periods}
+            periodIndex={activeIndex}
+            available={available}
+            historyHint={available.every(Boolean) ? null : `Umsätze von comdirect reichen bis ${monthYear(first)} zurück`}
+            onPeriodChange={setPeriodIndex}
+          />
+        </View>
         <InsightList insights={insights} />
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View ref={(r) => void (tourTargets.current.saving = r)} collapsable={false} style={{ flexDirection: 'row', gap: 12 }}>
           <SavingsCard savings={savings} goal={goal} projection={projection} onOpen={() => setSheet('goal')} />
           <YearList years={years.years} onOpen={() => setSheet('years')} />
         </View>
-        <PositionList positions={positions} onSelect={setSelected} allocation={allocation} onEditTargets={() => setSheet('allocation')} />
+        <View ref={(r) => void (tourTargets.current.positions = r)} collapsable={false}>
+          <PositionList positions={positions} onSelect={setSelected} allocation={allocation} onEditTargets={() => setSheet('allocation')} />
+        </View>
         {data.source.kind === 'comdirect' && <CompositionCard result={composition} overlap={overlap} positions={positions} onOpen={() => setSheet('composition')} />}
-        {/* Fußzeile: stille Quellenangabe, darunter die beiden Links in einer Zeile */}
-        <Text style={[styles.small, { textAlign: 'center', marginTop: 4 }]}>
-          {data.source.kind === 'comdirect'
-            ? holdingsFrom
-              ? `Bestand: comdirect, ${dateTime(holdingsFrom)} · Kurse: Stand ${dateTime(updatedAt)}`
-              : `comdirect · Stand ${dateTime(updatedAt)}`
-            : 'Demo-Daten'}
-        </Text>
-        <View style={{ flexDirection: 'row', alignSelf: 'center', alignItems: 'center' }}>
-          <Pressable onPress={() => setSheet('connect')} accessibilityRole="button" hitSlop={6} style={({ pressed }) => ({ paddingVertical: 8, opacity: pressed ? 0.6 : 1 })}>
-            <Text style={[styles.small, { color: theme.accent }]}>{setup ? 'Zugang verwalten' : 'comdirect verbinden'}</Text>
-          </Pressable>
-          <Text style={styles.small}>{'  ·  '}</Text>
-          <Pressable onPress={() => setSheet('help')} accessibilityRole="button" hitSlop={6} style={({ pressed }) => ({ paddingVertical: 8, opacity: pressed ? 0.6 : 1 })}>
-            <Text style={[styles.small, { color: theme.accent }]}>Anleitung & FAQ</Text>
-          </Pressable>
+        <View ref={(r) => void (tourTargets.current.footer = r)} collapsable={false}>
+          {/* Fußzeile: stille Quellenangabe, darunter die beiden Links in einer Zeile */}
+          <Text style={[styles.small, { textAlign: 'center', marginTop: 4 }]}>
+            {data.source.kind === 'comdirect'
+              ? holdingsFrom
+                ? `Bestand: comdirect, ${dateTime(holdingsFrom)} · Kurse: Stand ${dateTime(updatedAt)}`
+                : `comdirect · Stand ${dateTime(updatedAt)}`
+              : 'Demo-Daten'}
+          </Text>
+          <View style={{ flexDirection: 'row', alignSelf: 'center', alignItems: 'center' }}>
+            <Pressable onPress={() => setSheet('connect')} accessibilityRole="button" hitSlop={6} style={({ pressed }) => ({ paddingVertical: 8, opacity: pressed ? 0.6 : 1 })}>
+              <Text style={[styles.small, { color: theme.accent }]}>{setup ? 'Zugang verwalten' : 'comdirect verbinden'}</Text>
+            </Pressable>
+            <Text style={styles.small}>{'  ·  '}</Text>
+            <Pressable onPress={() => setSheet('help')} accessibilityRole="button" hitSlop={6} style={({ pressed }) => ({ paddingVertical: 8, opacity: pressed ? 0.6 : 1 })}>
+              <Text style={[styles.small, { color: theme.accent }]}>Anleitung & FAQ</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
 
@@ -327,11 +420,28 @@ export function DashboardScreen() {
         />
       )}
       {toast && <SuccessToast message={toast} topInset={insets.top} onDone={() => setToast(null)} />}
+      {tourStep !== null && (
+        <TourOverlay
+          rect={tourRect}
+          title={TOUR_STEPS[tourStep].title}
+          text={TOUR_STEPS[tourStep].text}
+          step={tourStep}
+          total={TOUR_STEPS.length}
+          onNext={nextTourStep}
+          onSkip={endTour}
+        />
+      )}
       <WelcomeSheet
         visible={sheet === 'welcome'}
         onDone={() => {
           welcomeSeen.set(true).catch(() => {});
           setSheet(null);
+        }}
+        onTour={() => {
+          welcomeSeen.set(true).catch(() => {});
+          setSheet(null);
+          // Kurz warten, bis das Blatt zugezogen ist, dann die Tour starten
+          setTimeout(() => setTourStep(0), 550);
         }}
         onHelp={() => {
           welcomeSeen.set(true).catch(() => {});

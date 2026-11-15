@@ -7,14 +7,16 @@ import { useStyles } from '../styles';
 
 interface Props {
   visible: boolean;
-  /** Schließt die Tour; sie kommt danach nie wieder */
+  /** Schließt das Blatt; es kommt danach nie wieder */
   onDone: () => void;
-  /** Schließt die Tour und öffnet direkt „Anleitung & FAQ“ */
+  /** Schließt das Blatt und startet die Spotlight-Tour über dem Demo-Depot */
+  onTour: () => void;
+  /** Schließt das Blatt und öffnet direkt „Anleitung & FAQ“ */
   onHelp: () => void;
 }
 
 /** Einmalige Willkommens-Tour beim ersten Start: Was die App ist, wie man verbindet, Sicherheit. */
-export function WelcomeSheet({ visible, onDone, onHelp }: Props) {
+export function WelcomeSheet({ visible, onDone, onTour, onHelp }: Props) {
   const { theme, styles } = useStyles();
 
   const card = (icon: ComponentProps<typeof Ionicons>['name'], title: string, text: string) => (
@@ -47,12 +49,22 @@ export function WelcomeSheet({ visible, onDone, onHelp }: Props) {
       <Pressable
         onPress={() => {
           tapFeedback();
-          onDone();
+          onTour();
         }}
         accessibilityRole="button"
         style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
       >
-        <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Los geht's</Text>
+        <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Kurze Tour durch die App</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => {
+          tapFeedback();
+          onDone();
+        }}
+        accessibilityRole="button"
+        style={({ pressed }) => ({ borderColor: theme.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+      >
+        <Text style={{ color: theme.accent, fontSize: 16, fontWeight: '600' }}>Direkt loslegen</Text>
       </Pressable>
       <Pressable onPress={onHelp} accessibilityRole="button" style={{ paddingVertical: 6, alignItems: 'center' }}>
         <Text style={[styles.text, { color: theme.accent, fontWeight: '600' }]}>Erst die Anleitung lesen</Text>
