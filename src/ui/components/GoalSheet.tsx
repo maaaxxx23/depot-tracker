@@ -96,8 +96,32 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
   const preserve = capitalToPreserve(drawMonthly, annualReturn);
   const consume = capitalToConsume(drawMonthly, annualReturn, years);
 
+  /**
+   * Übernehmen-Knopf: beide gleich gestaltet, damit keiner „aktiv“ wirkt. Ist der Betrag
+   * gerade das gespeicherte Ziel, zeigt ein Haken im Knopf die Rückmeldung.
+   */
+  const adoptButton = (label: string, capital: number, accessibility: string) => {
+    const adopted = goal !== null && Math.round(goal) === roundCapital(capital);
+    return (
+      <Pressable
+        onPress={() => onChangeGoal(roundCapital(capital))}
+        accessibilityRole="button"
+        accessibilityLabel={accessibility}
+        accessibilityState={{ selected: adopted }}
+        style={({ pressed }) => ({ flex: 1, borderColor: theme.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+      >
+        <View style={[styles.row, { gap: 5, justifyContent: 'center' }]}>
+          {adopted && <Ionicons name="checkmark-circle" size={17} color={theme.accent} />}
+          <Text style={{ color: theme.accent, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
+        </View>
+      </Pressable>
+    );
+  };
+
   const entered = Number(input);
   const valid = entered >= 100;
+  // Der eingetragene Betrag ist schon das gespeicherte Ziel: nichts zu übernehmen
+  const unchanged = goal !== null && entered === Math.round(goal);
   const save = () => {
     Keyboard.dismiss();
     onChangeGoal(entered);
@@ -162,11 +186,11 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           <Text style={[styles.text, { color: theme.muted }]}>€</Text>
         </View>
         <Pressable
-          disabled={!valid}
+          disabled={!valid || unchanged}
           onPress={save}
-          style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: !valid ? 0.4 : pressed ? 0.7 : 1 })}
+          style={({ pressed }) => ({ backgroundColor: unchanged ? theme.chip : theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: !valid && !unchanged ? 0.4 : pressed ? 0.7 : 1 })}
         >
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{goal ? 'Ziel ändern' : 'Ziel festlegen'}</Text>
+          <Text style={{ color: unchanged ? theme.muted : '#fff', fontSize: 16, fontWeight: '600' }}>{unchanged ? 'Ziel gesetzt' : goal ? 'Ziel ändern' : 'Ziel festlegen'}</Text>
         </Pressable>
         {goal ? (
           <Pressable onPress={() => onChangeGoal(null)} style={{ paddingVertical: 6, alignItems: 'center' }}>
@@ -253,28 +277,10 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
       {drawMonthly > 0 && (preserve !== null || consume !== null) && (
         <>
           <View style={[styles.row, { gap: 10 }]}>
-            {preserve !== null && (
-              <Pressable
-                onPress={() => onChangeGoal(roundCapital(preserve))}
-                accessibilityRole="button"
-                accessibilityLabel="Kapitalerhalt-Depot als Wunschbetrag übernehmen"
-                style={({ pressed }) => ({ flex: 1, backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
-              >
-                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', textAlign: 'center' }}>Kapitalerhalt als Ziel</Text>
-              </Pressable>
-            )}
-            {consume !== null && (
-              <Pressable
-                onPress={() => onChangeGoal(roundCapital(consume))}
-                accessibilityRole="button"
-                accessibilityLabel={`Verzehr-Depot über ${years} Jahre als Wunschbetrag übernehmen`}
-                style={({ pressed }) => ({ flex: 1, borderColor: theme.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
-              >
-                <Text style={{ color: theme.accent, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>Verzehr als Ziel</Text>
-              </Pressable>
-            )}
+            {preserve !== null && adoptButton('Kapitalerhalt als Ziel', preserve, 'Kapitalerhalt-Depot als Wunschbetrag übernehmen')}
+            {consume !== null && adoptButton('Verzehr als Ziel', consume, `Verzehr-Depot über ${years} Jahre als Wunschbetrag übernehmen`)}
           </View>
-          <Text style={[styles.small, { paddingHorizontal: 4 }]}>Übernimmt den jeweiligen Betrag als Wunschbetrag für dein Depot.</Text>
+          <Text style={[styles.small, { paddingHorizontal: 4 }]}>Übernimmt den jeweiligen Betrag als Wunschbetrag für dein Depot; der Haken zeigt, welcher gerade dein Ziel ist.</Text>
         </>
       )}
       {drawMonthly > 0 && (
