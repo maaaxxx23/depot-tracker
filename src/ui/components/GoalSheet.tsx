@@ -237,9 +237,10 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
       {drawMonthly > 0 && preserve !== null && (
         <Pressable
           onPress={() => onChangeGoal(roundCapital(preserve))}
-          style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+          accessibilityRole="button"
+          style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
         >
-          <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>Kapitalerhalt-Depot als Wunschbetrag übernehmen</Text>
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>Kapitalerhalt als Wunschbetrag übernehmen</Text>
         </Pressable>
       )}
       {drawMonthly > 0 && (
