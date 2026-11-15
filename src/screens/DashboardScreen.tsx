@@ -334,35 +334,39 @@ export function DashboardScreen() {
     const timers: ReturnType<typeof setTimeout>[] = [];
     let undo: (() => void) | null = null;
     if (key === 'hero') {
+      // Erst lesen lassen, dann führt das Auge sich selbst vor
       timers.push(
         setTimeout(() => {
           togglePrivacy();
           undo = togglePrivacy;
-        }, 900),
+        }, 2000),
       );
       timers.push(
         setTimeout(() => {
           togglePrivacy();
           undo = null;
-        }, 2400),
+        }, 3600),
       );
     } else if (key === 'chart') {
-      const alt = available.findIndex((ok, i) => ok && i !== activeIndex);
-      if (alt >= 0) {
-        const previous = activeIndex;
+      // Einmal von links nach rechts durch alle verfügbaren Zeiträume, dann zurück
+      const previous = activeIndex;
+      let at = 2000;
+      periods.forEach((_, i) => {
+        if (!available[i] || i === previous) return;
         timers.push(
           setTimeout(() => {
-            setPeriodIndex(alt);
+            setPeriodIndex(i);
             undo = () => setPeriodIndex(previous);
-          }, 900),
+          }, at),
         );
-        timers.push(
-          setTimeout(() => {
-            setPeriodIndex(previous);
-            undo = null;
-          }, 2400),
-        );
-      }
+        at += 800;
+      });
+      timers.push(
+        setTimeout(() => {
+          setPeriodIndex(previous);
+          undo = null;
+        }, at + 200),
+      );
     }
     return () => {
       timers.forEach(clearTimeout);
