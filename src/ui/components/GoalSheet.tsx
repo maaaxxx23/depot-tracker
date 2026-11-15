@@ -230,16 +230,16 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           rows={[
             { label: 'Nötiges Depot bei Kapitalerhalt', hint: 'die Entnahme kommt allein aus der Rendite', value: preserve !== null ? eur(preserve) : '–', private: true },
             { label: `Bei Verzehr über ${years} Jahre`, hint: 'das Depot ist danach aufgebraucht', value: consume !== null ? eur(consume) : '–', private: true },
-            { label: 'Dein Depot heute trüge', hint: 'pro Monat, bei Kapitalerhalt', value: eur(monthlyFromCapital(currentValue, annualReturn)), private: true },
+            { label: 'Dein Depot könnte heute auszahlen', hint: 'pro Monat aus der Rendite, ohne zu schrumpfen', value: eur(monthlyFromCapital(currentValue, annualReturn)), private: true },
           ]}
         />
       )}
       {drawMonthly > 0 && preserve !== null && (
         <Pressable
           onPress={() => onChangeGoal(roundCapital(preserve))}
-          style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+          style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
         >
-          <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>Depot für Kapitalerhalt als Wunschbetrag übernehmen</Text>
+          <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>Kapitalerhalt-Depot als Wunschbetrag übernehmen</Text>
         </Pressable>
       )}
       {drawMonthly > 0 && (
