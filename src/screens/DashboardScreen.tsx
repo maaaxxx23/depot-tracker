@@ -359,7 +359,7 @@ export function DashboardScreen() {
             undo = () => setPeriodIndex(previous);
           }, at),
         );
-        at += 800;
+        at += 1500;
       });
       timers.push(
         setTimeout(() => {
