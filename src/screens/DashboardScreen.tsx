@@ -42,6 +42,7 @@ import { TourOverlay, TourRect } from '../ui/components/TourOverlay';
 import { WelcomeSheet } from '../ui/components/WelcomeSheet';
 import { useShield } from '../ui/AppLock';
 import { dateTime, monthYear } from '../ui/format';
+import { usePrivacy } from '../ui/privacy';
 import { successFeedback } from '../ui/haptics';
 import { useStyles } from '../ui/styles';
 
@@ -91,6 +92,8 @@ const TOUR_STEPS = [
 export function DashboardScreen() {
   const { theme, styles } = useStyles();
   const insets = useSafeAreaInsets();
+  // Für die Tour-Vorführung des Auge-Modus
+  const { toggle: togglePrivacy } = usePrivacy();
   const demo = useMemo(() => createDemoData(), []);
   const [stored, setStored] = useState<StoredPortfolio | null>(null);
   const [market, setMarket] = useState<MarketData | null>(null);
@@ -289,7 +292,6 @@ export function DashboardScreen() {
   const nextTourStep = () => setTourStep((s) => (s !== null && s + 1 < TOUR_STEPS.length ? s + 1 : null));
   useEffect(() => {
     if (tourStep === null) return;
-    setTourRect(null);
     const target = tourTargets.current[TOUR_STEPS[tourStep].key];
     if (!target) {
       // Station fehlt (sollte im Demo-Depot nicht vorkommen): einfach weiter
@@ -323,6 +325,51 @@ export function DashboardScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourStep]);
+
+  // Kleine Vorführungen während der Tour: Die erklärte Funktion läuft einmal selbst ab
+  // und wird danach (oder beim Weiterspringen) wieder zurückgestellt.
+  useEffect(() => {
+    if (tourStep === null || tourRect === null) return;
+    const key = TOUR_STEPS[tourStep].key;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let undo: (() => void) | null = null;
+    if (key === 'hero') {
+      timers.push(
+        setTimeout(() => {
+          togglePrivacy();
+          undo = togglePrivacy;
+        }, 900),
+      );
+      timers.push(
+        setTimeout(() => {
+          togglePrivacy();
+          undo = null;
+        }, 2400),
+      );
+    } else if (key === 'chart') {
+      const alt = available.findIndex((ok, i) => ok && i !== activeIndex);
+      if (alt >= 0) {
+        const previous = activeIndex;
+        timers.push(
+          setTimeout(() => {
+            setPeriodIndex(alt);
+            undo = () => setPeriodIndex(previous);
+          }, 900),
+        );
+        timers.push(
+          setTimeout(() => {
+            setPeriodIndex(previous);
+            undo = null;
+          }, 2400),
+        );
+      }
+    }
+    return () => {
+      timers.forEach(clearTimeout);
+      undo?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourStep, tourRect === null]);
 
   useEffect(() => {
     if (!backupReminder || shieldLocked || shieldCovered) return;

@@ -1,4 +1,5 @@
-import { Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { tapFeedback } from '../haptics';
 import { useStyles } from '../styles';
 
@@ -10,7 +11,7 @@ export interface TourRect {
 }
 
 interface Props {
-  /** Bereich, der hell bleibt; null = wird gerade positioniert (alles abgedunkelt) */
+  /** Bereich, der hell bleibt; null = noch nicht vermessen (alles abgedunkelt) */
   rect: TourRect | null;
   title: string;
   text: string;
@@ -27,46 +28,87 @@ const PAD = 6;
 const BUBBLE_GUESS = 190;
 
 /**
- * Spotlight für die Tour: Vier dunkle Flächen rahmen den erklärten Bereich ein, eine
- * goldene Kontur hebt ihn hervor, und die Textblase liegt darüber oder darunter –
- * je nachdem, wo Platz ist. Tippen auf den hellen Bereich führt ebenfalls weiter.
+ * Spotlight für die Tour: Das Dunkel blendet weich ein, die helle Aussparung öffnet sich
+ * aus der Mitte der ersten Station und gleitet danach von Karte zu Karte. Die Textblase
+ * wechselt mit einer kleinen Blende, Tippen auf den hellen Bereich führt ebenfalls weiter.
  */
 export function TourOverlay({ rect, title, text, step, total, onNext, onSkip }: Props) {
   const { theme, styles } = useStyles();
   const { height } = useWindowDimensions();
 
-  const r = rect ? { x: rect.x - PAD, y: rect.y - PAD, w: rect.width + PAD * 2, h: rect.height + PAD * 2 } : null;
-  const below = !r || r.y + r.h + BUBBLE_GUESS < height - 24;
+  const fade = useRef(new Animated.Value(0)).current;
+  const bubbleFade = useRef(new Animated.Value(0)).current;
+  // Animierte Aussparung (Layout-Werte, daher ohne nativen Treiber)
+  const hole = useRef({ x: new Animated.Value(0), y: new Animated.Value(0), w: new Animated.Value(0), h: new Animated.Value(0) }).current;
+  const [hasHole, setHasHole] = useState(false);
+
+  useEffect(() => {
+    Animated.timing(fade, { toValue: 1, duration: 240, easing: Easing.out(Easing.ease), useNativeDriver: true }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!rect) return;
+    const r = { x: rect.x - PAD, y: rect.y - PAD, w: rect.width + PAD * 2, h: rect.height + PAD * 2 };
+    if (!hasHole) {
+      // Erste Station: aus der Mitte der Karte aufziehen
+      hole.x.setValue(r.x + r.w / 2);
+      hole.y.setValue(r.y + r.h / 2);
+      hole.w.setValue(0);
+      hole.h.setValue(0);
+      setHasHole(true);
+    }
+    const timing = (v: Animated.Value, to: number) => Animated.timing(v, { toValue: to, duration: 320, easing: Easing.inOut(Easing.cubic), useNativeDriver: false });
+    Animated.parallel([timing(hole.x, r.x), timing(hole.y, r.y), timing(hole.w, r.w), timing(hole.h, r.h)]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rect]);
+
+  // Die Textblase blendet bei jedem Stationswechsel neu ein, sobald die Aussparung gleitet
+  useEffect(() => {
+    bubbleFade.setValue(0);
+    const anim = Animated.timing(bubbleFade, { toValue: 1, duration: 260, delay: 320, easing: Easing.out(Easing.ease), useNativeDriver: true });
+    anim.start();
+    return () => anim.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, rect === null]);
+
   const next = () => {
     tapFeedback();
     onNext();
   };
 
+  const right = Animated.add(hole.x, hole.w);
+  const bottom = Animated.add(hole.y, hole.h);
+  const below = !rect || rect.y + rect.height + PAD + BUBBLE_GUESS < height - 24;
+
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-      {r ? (
+    <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: fade }}>
+      {hasHole ? (
         <>
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: Math.max(0, r.y), backgroundColor: DIM }} />
-          <View style={{ position: 'absolute', top: r.y, left: 0, width: Math.max(0, r.x), height: r.h, backgroundColor: DIM }} />
-          <View style={{ position: 'absolute', top: r.y, left: r.x + r.w, right: 0, height: r.h, backgroundColor: DIM }} />
-          <View style={{ position: 'absolute', top: r.y + r.h, left: 0, right: 0, bottom: 0, backgroundColor: DIM }} />
+          <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: hole.y, backgroundColor: DIM }} />
+          <Animated.View style={{ position: 'absolute', top: hole.y, left: 0, width: hole.x, height: hole.h, backgroundColor: DIM }} />
+          <Animated.View style={{ position: 'absolute', top: hole.y, left: right, right: 0, height: hole.h, backgroundColor: DIM }} />
+          <Animated.View style={{ position: 'absolute', top: bottom, left: 0, right: 0, bottom: 0, backgroundColor: DIM }} />
           {/* Fängt Tipps auf den hellen Bereich ab, damit die Karte darunter nicht reagiert */}
-          <Pressable onPress={next} style={{ position: 'absolute', top: r.y, left: r.x, width: r.w, height: r.h }} accessibilityLabel="Weiter zur nächsten Station" />
-          <View
+          <Animated.View style={{ position: 'absolute', top: hole.y, left: hole.x, width: hole.w, height: hole.h }}>
+            <Pressable onPress={next} style={{ flex: 1 }} accessibilityLabel="Weiter zur nächsten Station" />
+          </Animated.View>
+          <Animated.View
             pointerEvents="none"
-            style={{ position: 'absolute', top: r.y, left: r.x, width: r.w, height: r.h, borderRadius: 18, borderWidth: 2, borderColor: theme.accent }}
+            style={{ position: 'absolute', top: hole.y, left: hole.x, width: hole.w, height: hole.h, borderRadius: 18, borderWidth: 2, borderColor: theme.accent }}
           />
         </>
       ) : (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: DIM }} />
       )}
 
-      <View
+      <Animated.View
         style={{
           position: 'absolute',
           left: 16,
           right: 16,
-          ...(below ? { top: (r ? r.y + r.h : height * 0.45) + 14 } : { bottom: height - (r ? r.y : height * 0.45) + 14 }),
+          opacity: bubbleFade,
+          ...(below ? { top: (rect ? rect.y + rect.height + PAD : height * 0.45) + 14 } : { bottom: height - (rect ? rect.y - PAD : height * 0.45) + 14 }),
         }}
       >
         <View
@@ -93,7 +135,7 @@ export function TourOverlay({ rect, title, text, step, total, onNext, onSkip }: 
             </Pressable>
           </View>
         </View>
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
