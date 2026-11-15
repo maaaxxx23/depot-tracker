@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Image, Pressable, Text, View } from 'react-native';
+import { Animated, AppState, Easing, Image, Pressable, Text, View } from 'react-native';
 import { appLockPreference, autoLockPreference } from '../data/store';
 import { useStyles } from './styles';
 
@@ -24,8 +24,23 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
   const authenticating = useRef(false);
-  // Vorhang, solange die App nicht aktiv im Vordergrund ist (auch in der Multitasking-Ansicht)
-  const [covered, setCovered] = useState(AppState.currentState !== 'active');
+  // Vorhang, solange die App nicht aktiv im Vordergrund ist (auch in der Multitasking-Ansicht).
+  // Er blendet schnell ein (bevor iOS die Vorschau aufnimmt) und sanft wieder aus.
+  const [coverMounted, setCoverMounted] = useState(AppState.currentState !== 'active');
+  const coverOpacity = useRef(new Animated.Value(AppState.currentState !== 'active' ? 1 : 0)).current;
+  const setCovered = useCallback(
+    (show: boolean) => {
+      if (show) {
+        setCoverMounted(true);
+        Animated.timing(coverOpacity, { toValue: 1, duration: 120, easing: Easing.out(Easing.ease), useNativeDriver: true }).start();
+      } else {
+        Animated.timing(coverOpacity, { toValue: 0, duration: 300, easing: Easing.inOut(Easing.ease), useNativeDriver: true }).start(({ finished }) => {
+          if (finished) setCoverMounted(false);
+        });
+      }
+    },
+    [coverOpacity],
+  );
   const lastTouch = useRef(Date.now());
 
   const unlock = useCallback(async () => {
@@ -68,7 +83,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
       }
     });
     return () => sub.remove();
-  }, [unlock]);
+  }, [unlock, setCovered]);
 
   // Auto-Sperre: liegt die App so lange unberührt offen, sperrt sie sich selbst.
   // Die Einstellung wird bei jeder Prüfung frisch gelesen, damit Änderungen sofort gelten.
@@ -118,13 +133,23 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   return (
     <View style={{ flex: 1 }}>
       {content}
-      {covered && (
-        <View
+      {coverMounted && (
+        <Animated.View
           pointerEvents="none"
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: '#000',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: coverOpacity,
+          }}
         >
           <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
-        </View>
+        </Animated.View>
       )}
     </View>
   );
