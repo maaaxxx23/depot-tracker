@@ -338,6 +338,7 @@ export function DashboardScreen() {
         annualReturn={annualReturn}
         historicReturn={historicReturn}
         currentValue={result.endValue}
+        positions={positions}
         onChangeReturn={(rate) => {
           setAnnualReturn(rate);
           assumedReturnPreference.set(rate).catch(() => {});

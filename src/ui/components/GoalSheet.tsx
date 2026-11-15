@@ -14,12 +14,14 @@ import {
   monthlyFromCapital,
   roundCapital,
 } from '../../finance/withdrawal';
+import type { PositionResult } from '../../finance/performance';
 import type { Instrument } from '../../types';
 import { dayMonth, eur, monthName, monthYear, pct, percent, shortPercent } from '../format';
 import { usePrivacy } from '../privacy';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
 import { DetailRow, DetailRows } from './DetailRows';
+import { positionColor } from './PositionList';
 
 interface Props {
   visible: boolean;
@@ -37,10 +39,12 @@ interface Props {
   historicReturn: number | null;
   /** Heutiger Depotwert, für die Entnahme-Modellrechnung */
   currentValue: number;
+  /** Positionen in der Reihenfolge der Startseite, für die Farben der Sparpläne */
+  positions: PositionResult[];
 }
 
 /** Wunschbetrag festlegen, dazu die erkannten Sparpläne, die Hochrechnung und die Entnahme-Modellrechnung. */
-export function GoalSheet({ visible, onClose, savings, instruments, goal, projection, onChangeGoal, annualReturn, onChangeReturn, historicReturn, currentValue }: Props) {
+export function GoalSheet({ visible, onClose, savings, instruments, goal, projection, onChangeGoal, annualReturn, onChangeReturn, historicReturn, currentValue, positions }: Props) {
   const { theme, styles } = useStyles();
   const { hidden } = usePrivacy();
   const [input, setInput] = useState('');
@@ -140,8 +144,14 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
     onChangeGoal(entered);
   };
 
+  // Dieselbe Farbe wie in der Positionen-Karte auf der Startseite
+  const colorFor = (isin: string) => {
+    const index = positions.findIndex((p) => p.instrument.isin === isin);
+    return index >= 0 ? positionColor(theme, index) : undefined;
+  };
   const planRows: DetailRow[] = savings.plans.map((p) => ({
     label: instruments.find((i) => i.isin === p.isin)?.shortName ?? p.isin,
+    labelColor: colorFor(p.isin),
     hint: p.source === 'auto' ? 'pro Monat · automatisch erkannt' : `von dir markiert · letzter Kauf am ${dayMonth(p.lastBuy)}`,
     value: eur(p.rate),
     private: true,
@@ -312,7 +322,18 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         </View>
       )}
 
-      <DetailRows rows={[{ label: 'Dieses Jahr eingezahlt', hint: 'alle Käufe zusammen, auch Einzelkäufe', value: eur(savings.investedThisYear), private: true }]} />
+      <DetailRows
+        rows={[
+          {
+            label: 'Dieses Jahr eingezahlt',
+            hint: 'alle Käufe zusammen, auch Einzelkäufe',
+            value: eur(savings.investedThisYear),
+            private: true,
+            // Spielerei: Der Betrag läuft durch die Farben deiner Positionen
+            valueColors: positions.map((_, i) => positionColor(theme, i)),
+          },
+        ]}
+      />
 
       <Text style={[styles.small, { paddingHorizontal: 4 }]}>
         Die App erkennt einen Sparplan selbst, sobald du ein Wertpapier in mindestens drei der letzten vier Monate für einen ähnlichen Betrag gekauft hast. Einen neuen
