@@ -12,12 +12,12 @@ import { useStyles } from './styles';
  */
 const ShieldContext = createContext<{ locked: boolean; covered: boolean; unlock: () => void }>({ locked: false, covered: false, unlock: () => {} });
 
-/** Ist die App gerade verdeckt (gesperrt oder hinter dem Vorhang)? Z. B. für Einblendungen, die warten sollen. */
+/** Ist die App gerade verdeckt (gesperrt oder nicht im Vordergrund)? Z. B. für Einblendungen, die warten sollen. */
 export function useShield() {
   return useContext(ShieldContext);
 }
 
-/** Blickdichte Abdeckung für ein Modal: schwarzer Vorhang bzw. Sperrbildschirm. */
+/** Blickdichte Abdeckung für ein Modal: App-Symbol bzw. Sperrbildschirm. */
 export function ShieldOverlay() {
   const { locked, covered, unlock } = useContext(ShieldContext);
   const { theme } = useStyles();
@@ -36,11 +36,9 @@ export function ShieldOverlay() {
         gap: 14,
       }}
     >
-      {covered ? (
-        <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
-      ) : (
+      <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
+      {locked && !covered && (
         <>
-          <Ionicons name="lock-closed-outline" size={40} color={theme.muted} />
           <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
           <Pressable
             onPress={unlock}
@@ -59,40 +57,38 @@ export function ShieldOverlay() {
 const AUTO_LOCK_CHECK_MS = 10000;
 
 /**
- * Legt sich über die ganze App, bis Face ID (oder ersatzweise der Geräte-Code) entsperrt hat.
- * Gesperrt wird beim Start, wenn die App aus dem Hintergrund zurückkommt und – falls
- * eingestellt – nach einigen Minuten ohne Berührung. Kurze Unterbrechungen wie das
- * Teilen-Menü oder die Face-ID-Abfrage selbst sperren nicht.
- *
- * Sobald die App nicht im Vordergrund ist (App-Wechsler, andere App), deckt ein schwarzer
- * Vorhang mit dem App-Symbol den Inhalt ab, damit die iOS-Vorschau nichts verrät.
+ * Vorhang und Sperre in einem: Verlässt die App den Vordergrund, laufen zwei Hälften wie
+ * ein Theatervorhang zusammen (schnell, bevor iOS die Vorschau aufnimmt). Ist die Sperre
+ * aktiv, bleibt der Vorhang beim Zurückkommen geschlossen und trägt Sperrtext samt
+ * Entsperren-Knopf – erst nach Face ID (oder Geräte-Code) öffnet er sich und gibt die
+ * weiterlaufende App frei. So überlebt z. B. eine comdirect-Anmeldung den Wechsel in die
+ * photoTAN-App, und der Vorhang-Effekt bleibt bei jedem Entsperren sichtbar.
  */
 export function AppLock({ children }: { children: React.ReactNode }) {
   const { theme } = useStyles();
-  // null = Einstellung wird noch gelesen: solange nur die leere Fläche zeigen, damit nichts aufblitzt
+  // null = Einstellung wird noch gelesen: solange bleibt der Vorhang zu, damit nichts aufblitzt
   const [locked, setLocked] = useState<boolean | null>(null);
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
   const authenticating = useRef(false);
-  // Vorhang, solange die App nicht aktiv im Vordergrund ist (auch in der Multitasking-Ansicht).
-  // Zwei schwarze Hälften laufen wie ein Theatervorhang zusammen: schnell zu (bevor iOS die
-  // Vorschau aufnimmt), gemächlich wieder auf.
+  // Nicht aktiv im Vordergrund (App-Wechsler, andere App, Face-ID-Abfrage)
+  const [away, setAway] = useState(AppState.currentState !== 'active');
   const { width } = useWindowDimensions();
-  const [coverMounted, setCoverMounted] = useState(AppState.currentState !== 'active');
-  const coverProgress = useRef(new Animated.Value(AppState.currentState !== 'active' ? 1 : 0)).current;
-  const setCovered = useCallback(
-    (show: boolean) => {
-      if (show) {
-        setCoverMounted(true);
-        Animated.timing(coverProgress, { toValue: 1, duration: 140, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-      } else {
-        Animated.timing(coverProgress, { toValue: 0, duration: 380, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(({ finished }) => {
-          if (finished) setCoverMounted(false);
-        });
-      }
+  // Der Vorhang startet geschlossen und öffnet sich erst, wenn klar ist, dass keine Sperre aktiv ist
+  const [coverMounted, setCoverMounted] = useState(true);
+  const coverProgress = useRef(new Animated.Value(1)).current;
+  const closeCover = useCallback(
+    (duration = 140) => {
+      setCoverMounted(true);
+      Animated.timing(coverProgress, { toValue: 1, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     },
     [coverProgress],
   );
+  const openCover = useCallback(() => {
+    Animated.timing(coverProgress, { toValue: 0, duration: 380, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(({ finished }) => {
+      if (finished) setCoverMounted(false);
+    });
+  }, [coverProgress]);
   const lastTouch = useRef(Date.now());
 
   const unlock = useCallback(async () => {
@@ -103,27 +99,38 @@ export function AppLock({ children }: { children: React.ReactNode }) {
       if (result.success) {
         lastTouch.current = Date.now();
         setLocked(false);
+        openCover();
       }
     } catch {
       // Abbruch oder Face ID nicht verfügbar: der Entsperren-Knopf bleibt für den nächsten Versuch
     } finally {
       authenticating.current = false;
     }
-  }, []);
+  }, [openCover]);
 
   useEffect(() => {
     appLockPreference
       .get()
       .then((on) => {
         setLocked(on);
-        if (on) unlock();
+        if (on) {
+          unlock();
+        } else {
+          openCover();
+        }
       })
-      .catch(() => setLocked(false));
-  }, [unlock]);
+      .catch(() => {
+        setLocked(false);
+        openCover();
+      });
+  }, [unlock, openCover]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
-      setCovered(state !== 'active');
+      setAway(state !== 'active');
+      if (state !== 'active') {
+        closeCover();
+      }
       if (state === 'background') {
         appLockPreference
           .get()
@@ -131,133 +138,114 @@ export function AppLock({ children }: { children: React.ReactNode }) {
           .catch(() => {});
       } else if (state === 'active') {
         lastTouch.current = Date.now();
-        if (lockedRef.current) unlock();
+        if (lockedRef.current) {
+          // Vorhang bleibt zu, bis entsperrt ist
+          unlock();
+        } else {
+          openCover();
+        }
       }
     });
     return () => sub.remove();
-  }, [unlock, setCovered]);
+  }, [unlock, closeCover, openCover]);
 
-  // Sperren mit Vorhang: Er schließt sich über der App, dahinter wird auf „gesperrt“
-  // gewechselt, dann öffnet er sich und gibt den Sperrbildschirm frei.
-  const lockingWithCurtain = useRef(false);
-  const lockWithCurtain = useCallback(() => {
-    if (lockingWithCurtain.current) return;
-    lockingWithCurtain.current = true;
-    setCoverMounted(true);
-    Animated.timing(coverProgress, { toValue: 1, duration: 350, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(() => {
-      setLocked(true);
-      Animated.timing(coverProgress, { toValue: 0, duration: 380, delay: 150, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(({ finished }) => {
-        if (finished) setCoverMounted(false);
-        lockingWithCurtain.current = false;
-      });
-    });
-  }, [coverProgress]);
-
-  // Auto-Sperre: liegt die App so lange unberührt offen, sperrt sie sich selbst.
+  // Auto-Sperre: liegt die App so lange unberührt offen, schließt sich der Vorhang und bleibt zu.
   // Die Einstellung wird bei jeder Prüfung frisch gelesen, damit Änderungen sofort gelten.
   useEffect(() => {
     const id = setInterval(async () => {
-      if (lockedRef.current !== false || authenticating.current || lockingWithCurtain.current) return;
+      if (lockedRef.current !== false || authenticating.current) return;
       try {
         const [on, minutes] = await Promise.all([appLockPreference.get(), autoLockPreference.get()]);
-        if (on && minutes > 0 && Date.now() - lastTouch.current >= minutes * 60000) lockWithCurtain();
+        if (on && minutes > 0 && Date.now() - lastTouch.current >= minutes * 60000) {
+          closeCover(350);
+          setLocked(true);
+        }
       } catch {
         // Einstellung nicht lesbar: lieber nicht sperren
       }
     }, AUTO_LOCK_CHECK_MS);
     return () => clearInterval(id);
-  }, [lockWithCurtain]);
+  }, [closeCover]);
+
+  const showLockUi = locked === true && !away;
+  const curtain = coverMounted || locked !== false;
 
   return (
-    <ShieldContext.Provider value={{ locked: locked !== false, covered: coverMounted, unlock }}>
-    <View style={{ flex: 1 }}>
-      {/* Die App bleibt auch gesperrt im Hintergrund am Leben, damit z. B. eine laufende
-          comdirect-Anmeldung den Wechsel zur photoTAN-App überlebt. Der Sperrbildschirm
-          legt sich nur blickdicht darüber. Berührungen werden nicht abgefangen, nur ihr
-          Zeitpunkt für die Auto-Sperre gemerkt. */}
-      <View
-        style={{ flex: 1 }}
-        onStartShouldSetResponderCapture={() => {
-          lastTouch.current = Date.now();
-          return false;
-        }}
-        accessibilityElementsHidden={locked !== false}
-        importantForAccessibility={locked !== false ? 'no-hide-descendants' : 'auto'}
-      >
-        {children}
-      </View>
-      {locked !== false && (
+    <ShieldContext.Provider value={{ locked: locked !== false, covered: away, unlock }}>
+      <View style={{ flex: 1 }}>
+        {/* Die App bleibt auch gesperrt am Leben, damit z. B. eine laufende comdirect-Anmeldung
+            den Wechsel zur photoTAN-App überlebt. Berührungen werden nicht abgefangen, nur ihr
+            Zeitpunkt für die Auto-Sperre gemerkt. */}
         <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: theme.background,
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 14,
+          style={{ flex: 1 }}
+          onStartShouldSetResponderCapture={() => {
+            lastTouch.current = Date.now();
+            return false;
           }}
+          accessibilityElementsHidden={locked !== false}
+          importantForAccessibility={locked !== false ? 'no-hide-descendants' : 'auto'}
         >
-          {locked && (
-            <>
-              <Ionicons name="lock-closed-outline" size={40} color={theme.muted} />
-              <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
-              <Pressable
-                onPress={unlock}
-                accessibilityRole="button"
-                style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
-              >
-                <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
-              </Pressable>
-            </>
-          )}
+          {children}
         </View>
-      )}
-      {coverMounted && (
-        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
-          {/* Linke und rechte Vorhanghälfte; 1 px Überlappung, damit in der Mitte kein Spalt bleibt */}
-          <Animated.View
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: 0,
-              width: width / 2 + 1,
-              backgroundColor: theme.background,
-              transform: [{ translateX: coverProgress.interpolate({ inputRange: [0, 1], outputRange: [-(width / 2 + 1), 0] }) }],
-            }}
-          />
-          <Animated.View
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              right: 0,
-              width: width / 2 + 1,
-              backgroundColor: theme.background,
-              transform: [{ translateX: coverProgress.interpolate({ inputRange: [0, 1], outputRange: [width / 2 + 1, 0] }) }],
-            }}
-          />
-          {/* Das Symbol erscheint erst, wenn der Vorhang fast geschlossen ist */}
-          <Animated.View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: coverProgress.interpolate({ inputRange: [0.75, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
-            }}
+        {curtain && (
+          <View
+            pointerEvents={showLockUi ? 'auto' : 'none'}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}
           >
-            <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
-          </Animated.View>
-        </View>
-      )}
-    </View>
+            {/* Linke und rechte Vorhanghälfte; 1 px Überlappung, damit in der Mitte kein Spalt bleibt */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: 0,
+                width: width / 2 + 1,
+                backgroundColor: theme.background,
+                transform: [{ translateX: coverProgress.interpolate({ inputRange: [0, 1], outputRange: [-(width / 2 + 1), 0] }) }],
+              }}
+            />
+            <Animated.View
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                right: 0,
+                width: width / 2 + 1,
+                backgroundColor: theme.background,
+                transform: [{ translateX: coverProgress.interpolate({ inputRange: [0, 1], outputRange: [width / 2 + 1, 0] }) }],
+              }}
+            />
+            {/* App-Symbol und – bei aktiver Sperre – Sperrtext und Entsperren direkt auf dem Vorhang */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 14,
+                opacity: coverProgress.interpolate({ inputRange: [0.75, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
+              }}
+            >
+              <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
+              {showLockUi && (
+                <>
+                  <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
+                  <Pressable
+                    onPress={unlock}
+                    accessibilityRole="button"
+                    style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
+                  >
+                    <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
+                  </Pressable>
+                </>
+              )}
+            </Animated.View>
+          </View>
+        )}
+      </View>
     </ShieldContext.Provider>
   );
 }
