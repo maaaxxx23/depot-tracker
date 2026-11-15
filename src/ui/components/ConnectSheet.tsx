@@ -8,6 +8,7 @@ import { appLockPreference, autoLockPreference, clearStored } from '../../data/s
 import { eur, monthYear } from '../format';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
+import { InfoDot } from './InfoDot';
 
 type TextInputHandle = React.ComponentRef<typeof TextInput>;
 
@@ -238,7 +239,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
         <View style={[styles.card, { gap: 10 }]}>
           <Text style={styles.small}>
             Gespeichert für die Zugangsnummer ••••{setup.username.slice(-4)} – nur im Schlüsselbund dieses iPhones, die PIN
-            zusätzlich mit Face ID geschützt. Die App liest nur und kann keine Aufträge erteilen.
+            mit Face ID geschützt. Die App liest nur.
           </Text>
           <Pressable onPress={startEditing} style={({ pressed }) => [secondary, { opacity: pressed ? 0.6 : 1 }]}>
             <Text style={secondaryText}>Zugangsdaten ändern</Text>
@@ -302,8 +303,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
           <Switch value={lock} onValueChange={toggleLock} />
         </View>
         <Text style={styles.small}>
-          Beim Öffnen und nach dem Wechsel in eine andere App muss Depot Tracker erst mit Face ID oder dem Geräte-Code
-          entsperrt werden. Im App-Wechsler zeigt die App nur ihr Symbol auf schwarzem Grund.
+          Beim Öffnen und nach einem App-Wechsel verlangt die App Face ID; im App-Wechsler zeigt sie nur ihr Symbol.
         </Text>
         {lock && (
           <>
@@ -329,7 +329,6 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
                 </Pressable>
               ))}
             </View>
-            <Text style={styles.small}>Sperrt die App auch dann, wenn sie offen liegen bleibt und so lange nicht berührt wird.</Text>
           </>
         )}
       </View>
@@ -338,9 +337,8 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
       <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Daten sichern</Text>
       <View style={[styles.card, { gap: 10 }]}>
         <Text style={styles.small}>
-          comdirect liefert nur etwa ein halbes Jahr an Umsätzen. Die App sammelt sie bei jedem Abruf; mit einer Sicherung in
-          iCloud Drive bleiben sie auch nach dem Löschen der App erhalten. Die Datei enthält deine Depotdaten,
-          Einstellungen (Ziel, Rendite, Sparpläne) und die importierten ETF-Listen, aber keine Zugangsdaten.
+          comdirect liefert nur ein halbes Jahr Umsätze – die Sicherung bewahrt alles Gesammelte samt Einstellungen und
+          ETF-Listen, ohne Zugangsdaten.
         </Text>
         <View style={[styles.row, { gap: 10 }]}>
           <Pressable onPress={backup} disabled={busy} style={({ pressed }) => [secondary, { opacity: busy ? 0.4 : pressed ? 0.6 : 1 }]}>
@@ -353,13 +351,17 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
       </View>
 
       {/* Ältere Umsätze: die Schnittstelle liefert nur etwa ein halbes Jahr, der Export auf comdirect.de bis zu 540 Tage */}
-      <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Umsätze importieren</Text>
+      <View style={[styles.row, { gap: 6, paddingHorizontal: 4, marginTop: 8 }]}>
+        <Text style={[styles.label, { fontWeight: '600' }]}>Umsätze importieren</Text>
+        <InfoDot
+          title="Umsätze importieren"
+          text={
+            'Ältere Käufe und Verkäufe findest du auf comdirect.de unter Depot → Depotumsätze, Ausschüttungen und Dividenden unter den Umsätzen des Verrechnungskontos.\n\nJeweils den Zeitraum so weit wie möglich zurückstellen, unten „Export als csv“ wählen und die Datei hier auswählen. Die App erkennt die Art der Datei selbst; Bekanntes wird nicht doppelt gezählt.'
+          }
+        />
+      </View>
       <View style={[styles.card, { gap: 10 }]}>
-        <Text style={styles.small}>
-          Ältere Käufe und Verkäufe: auf comdirect.de unter Depot → Depotumsätze. Ausschüttungen und Dividenden: unter den
-          Umsätzen des Verrechnungskontos. Jeweils den Zeitraum so weit wie möglich zurückstellen, unten „Export als csv“ wählen
-          und die Datei hier auswählen. Die App erkennt die Art der Datei selbst; Bekanntes wird nicht doppelt gezählt.
-        </Text>
+        <Text style={styles.small}>Holt ältere Umsätze aus dem CSV-Export von comdirect.de in die App.</Text>
         <Pressable onPress={importCsv} disabled={busy} style={({ pressed }) => [secondary, { opacity: busy ? 0.4 : pressed ? 0.6 : 1 }]}>
           <Text style={secondaryText}>CSV-Datei auswählen</Text>
         </Pressable>

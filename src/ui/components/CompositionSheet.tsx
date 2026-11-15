@@ -253,8 +253,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
         </>
       ) : (
         <Text style={[styles.text, { color: theme.muted }]}>
-          Hier siehst du, in welchen Ländern, Branchen und Firmen dein Geld tatsächlich steckt, über alle ETFs zusammengerechnet. Dafür braucht die App von jedem ETF die
-          Bestandsliste des Anbieters.
+          In welchen Ländern, Branchen und Firmen steckt dein Geld? Dafür braucht die App von jedem ETF die Bestandsliste des Anbieters.
         </Text>
       )}
 

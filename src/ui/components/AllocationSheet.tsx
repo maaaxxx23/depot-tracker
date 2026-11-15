@@ -42,7 +42,7 @@ export function AllocationSheet({ visible, onClose, positions, targets, allocati
   return (
     <Sheet visible={visible} onClose={onClose} title="Zielaufteilung">
       <Text style={[styles.text, { color: theme.muted }]}>
-        Lege fest, welchen Anteil jede Position an deinem Depot haben soll. Weicht eine Position um mehr als {shortPercent(DEVIATION_LIMIT)}-Punkte ab, weist dich die App darauf hin.
+        Welchen Anteil soll jede Position haben? Ab {shortPercent(DEVIATION_LIMIT)}-Punkten Abweichung weist die App darauf hin.
       </Text>
 
       <View style={[styles.card, { gap: 0, paddingVertical: 4 }]}>

@@ -21,6 +21,7 @@ import { usePrivacy } from '../privacy';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
 import { DetailRow, DetailRows } from './DetailRows';
+import { InfoDot } from './InfoDot';
 import { positionColor } from './PositionList';
 
 interface Props {
@@ -230,8 +231,8 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           {stepButton('add', RETURN_STEP, annualReturn >= MAX_RETURN - 1e-9)}
         </View>
         <Text style={styles.small}>
-          Damit rechnet die App in die Zukunft. Aktien-ETFs brachten langfristig im Schnitt etwa 5 bis 7 % im Jahr, einzelne Jahre weichen stark ab.
-          {historicReturn !== null ? ` Dein Depot bisher: ${pct(historicReturn)} im Jahr.` : ''}
+          Aktien-ETFs brachten langfristig etwa 5 bis 7 % im Jahr.
+          {historicReturn !== null ? ` Dein Depot bisher: ${pct(historicReturn)}.` : ''}
         </Text>
       </View>
 
@@ -242,10 +243,18 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         </>
       )}
 
-      <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Entnahme</Text>
+      <View style={[styles.row, { gap: 6, paddingHorizontal: 4, marginTop: 8 }]}>
+        <Text style={[styles.label, { fontWeight: '600' }]}>Entnahme</Text>
+        <InfoDot
+          title="Entnahme"
+          text={
+            'Eine grobe Modellrechnung mit deiner angenommenen Rendite, ohne Steuern und Inflation: Auf Gewinne gehen bei der Entnahme meist rund 26 % Steuern ab, und schwache erste Jahre können den Verzehr deutlich verkürzen.\n\nOb und wie viel du entnimmst, entscheidest du – die App gibt keine Empfehlung.'
+          }
+        />
+      </View>
       <View style={[styles.card, { gap: 10 }]}>
         <Text style={[styles.text, { color: theme.muted }]}>
-          Eine Modellrechnung für später: Wie groß müsste dein Depot sein, damit du dir jeden Monat einen Wunschbetrag auszahlen kannst?
+          Wie groß müsste dein Depot sein, damit es dir jeden Monat einen Wunschbetrag auszahlt?
         </Text>
         <View style={[styles.row, { gap: 10 }]}>
           <TextInput
@@ -298,22 +307,21 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         />
       )}
       {drawMonthly > 0 && (preserve !== null || consume !== null) && (
-        <>
-          <View style={[styles.row, { gap: 10 }]}>
-            {preserve !== null && adoptButton('Kapitalerhalt als Ziel', preserve, 'Kapitalerhalt-Depot als Wunschbetrag übernehmen')}
-            {consume !== null && adoptButton('Verzehr als Ziel', consume, `Verzehr-Depot über ${years} Jahre als Wunschbetrag übernehmen`)}
-          </View>
-          <Text style={[styles.small, { paddingHorizontal: 4 }]}>Übernimmt den jeweiligen Betrag als Wunschbetrag für dein Depot; der gefüllte Knopf zeigt, welcher gerade dein Ziel ist.</Text>
-        </>
-      )}
-      {drawMonthly > 0 && (
-        <Text style={[styles.small, { paddingHorizontal: 4 }]}>
-          Gerechnet mit deiner angenommenen Rendite, ohne Steuern und Inflation: Auf Gewinne gehen bei der Entnahme meist rund 26 % Steuern ab, und gerade schwache erste
-          Jahre können den Verzehr spürbar verkürzen. Ob und wie viel du entnimmst, entscheidest du.
-        </Text>
+        <View style={[styles.row, { gap: 10 }]}>
+          {preserve !== null && adoptButton('Kapitalerhalt als Ziel', preserve, 'Kapitalerhalt-Depot als Wunschbetrag übernehmen')}
+          {consume !== null && adoptButton('Verzehr als Ziel', consume, `Verzehr-Depot über ${years} Jahre als Wunschbetrag übernehmen`)}
+        </View>
       )}
 
-      <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Sparpläne</Text>
+      <View style={[styles.row, { gap: 6, paddingHorizontal: 4, marginTop: 8 }]}>
+        <Text style={[styles.label, { fontWeight: '600' }]}>Sparpläne</Text>
+        <InfoDot
+          title="Sparpläne"
+          text={
+            'Die App erkennt einen Sparplan selbst, sobald du ein Wertpapier in mindestens drei der letzten vier Monate für einen ähnlichen Betrag gekauft hast. Einen neuen Sparplan kannst du vorab in den Details der Position markieren.\n\nDie Hochrechnung ist eine grobe Schätzung – Kurse schwanken, und niemand kennt die künftige Rendite.'
+          }
+        />
+      </View>
       {planRows.length + inactiveRows.length > 0 ? (
         <DetailRows rows={[...planRows, ...inactiveRows, { label: 'Zusammen', hint: 'pro Monat', value: eur(savings.monthlyRate), private: true }]} />
       ) : (
@@ -335,11 +343,6 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         ]}
       />
 
-      <Text style={[styles.small, { paddingHorizontal: 4 }]}>
-        Die App erkennt einen Sparplan selbst, sobald du ein Wertpapier in mindestens drei der letzten vier Monate für einen ähnlichen Betrag gekauft hast. Einen neuen
-        Sparplan kannst du vorab in den Details der Position markieren. Die Hochrechnung ist eine grobe Schätzung: Kurse schwanken, und niemand kennt die künftige
-        Rendite.
-      </Text>
     </Sheet>
   );
 }
