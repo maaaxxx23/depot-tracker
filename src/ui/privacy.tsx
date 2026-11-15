@@ -63,7 +63,9 @@ export function mask(text: string): string {
 export function BlurFilter({ id, stdDeviation }: { id: string; stdDeviation: number }) {
   return (
     <Defs>
-      <Filter id={id} x="-50%" y="-50%" width="200%" height="200%">
+      {/* Der Zeichenbereich muss die volle Unschärfe fassen (ca. 3× stdDeviation über die
+          Texthöhe hinaus), sonst wird sie abgeschnitten und bekommt harte Kanten. */}
+      <Filter id={id} x="-150%" y="-200%" width="400%" height="500%">
         <FeGaussianBlur stdDeviation={stdDeviation} />
       </Filter>
     </Defs>
