@@ -87,20 +87,36 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [unlock, setCovered]);
 
+  // Sperren mit Vorhang: Er schließt sich über der App, dahinter wird auf „gesperrt“
+  // gewechselt, dann öffnet er sich und gibt den Sperrbildschirm frei.
+  const lockingWithCurtain = useRef(false);
+  const lockWithCurtain = useCallback(() => {
+    if (lockingWithCurtain.current) return;
+    lockingWithCurtain.current = true;
+    setCoverMounted(true);
+    Animated.timing(coverProgress, { toValue: 1, duration: 350, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(() => {
+      setLocked(true);
+      Animated.timing(coverProgress, { toValue: 0, duration: 380, delay: 150, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(({ finished }) => {
+        if (finished) setCoverMounted(false);
+        lockingWithCurtain.current = false;
+      });
+    });
+  }, [coverProgress]);
+
   // Auto-Sperre: liegt die App so lange unberührt offen, sperrt sie sich selbst.
   // Die Einstellung wird bei jeder Prüfung frisch gelesen, damit Änderungen sofort gelten.
   useEffect(() => {
     const id = setInterval(async () => {
-      if (lockedRef.current !== false || authenticating.current) return;
+      if (lockedRef.current !== false || authenticating.current || lockingWithCurtain.current) return;
       try {
         const [on, minutes] = await Promise.all([appLockPreference.get(), autoLockPreference.get()]);
-        if (on && minutes > 0 && Date.now() - lastTouch.current >= minutes * 60000) setLocked(true);
+        if (on && minutes > 0 && Date.now() - lastTouch.current >= minutes * 60000) lockWithCurtain();
       } catch {
         // Einstellung nicht lesbar: lieber nicht sperren
       }
     }, AUTO_LOCK_CHECK_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [lockWithCurtain]);
 
   const content =
     locked === false ? (
