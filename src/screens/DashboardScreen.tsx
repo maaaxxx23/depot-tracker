@@ -247,6 +247,7 @@ export function DashboardScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 32, gap: 12 }}
       >
         <Hero
+          demo={data.source.kind !== 'comdirect'}
           value={result.endValue}
           gain={result.gain}
           irr={result.irr}

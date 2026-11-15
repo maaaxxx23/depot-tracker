@@ -6,6 +6,8 @@ import { signColor, useStyles } from '../styles';
 import { TypedAmount } from './TypedAmount';
 
 interface Props {
+  /** true = Demo-Daten: die Überschrift sagt es deutlich */
+  demo?: boolean;
   value: number;
   gain: number;
   irr: number | null;
@@ -24,7 +26,7 @@ interface Props {
  * Kopf der Startseite, bewusst ruhig: Wert, eine kleine Stand-Zeile und knappe Kennzahlen.
  * Die Details (Yahoo-Schätzung, Einstand laut comdirect) stehen in Fußzeile und Hilfe.
  */
-export function Hero({ value, gain, irr, periodLabel, updatedAt, holdingsFrom, sinceBuy, onRefresh, onPreviewVisit }: Props) {
+export function Hero({ demo, value, gain, irr, periodLabel, updatedAt, holdingsFrom, sinceBuy, onRefresh, onPreviewVisit }: Props) {
   const { theme, styles } = useStyles();
   const { hidden, toggle } = usePrivacy();
   const gainStyle = [styles.number, { fontSize: 17, fontWeight: '600' as const, color: signColor(theme, irr) }];
@@ -32,7 +34,7 @@ export function Hero({ value, gain, irr, periodLabel, updatedAt, holdingsFrom, s
   return (
     <View style={{ gap: 4 }}>
       <View style={[styles.row, { justifyContent: 'space-between' }]}>
-        <Text style={{ fontSize: 17, fontWeight: '600', color: theme.muted }}>Depot</Text>
+        <Text style={{ fontSize: 17, fontWeight: '600', color: theme.muted }}>{demo ? 'Demo-Depot' : 'Depot'}</Text>
         <View style={[styles.row, { gap: 14 }]}>
           <Pressable onPress={onRefresh} hitSlop={10} accessibilityLabel="Mit comdirect aktualisieren">
             <Ionicons name="refresh" size={21} color={theme.muted} />
