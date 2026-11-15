@@ -20,8 +20,9 @@ const light = {
   negative: '#D1342F',
   chip: '#E6E6EC',
   warn: '#C77700',
-  // Aufteilungsbalken, eine Farbe je Position
-  palette: ['#2F6FEB', '#21A39A', '#8B5CF6', '#E0A21E', '#9A9AA6'],
+  // Aufteilungsbalken, eine Farbe je Position; bewusst ohne die goldene Akzentfarbe,
+  // damit sich markierte ETFs immer vom Design abheben
+  palette: ['#2F6FEB', '#21A39A', '#8B5CF6', '#C75990', '#9A9AA6'],
 };
 
 const dark: typeof light = {
@@ -41,7 +42,7 @@ const dark: typeof light = {
   negative: '#FF6B61',
   chip: '#2C2C31',
   warn: '#F2A444',
-  palette: ['#5B8DF6', '#35C2B6', '#A78BFA', '#F2C14E', '#77777F'],
+  palette: ['#5B8DF6', '#35C2B6', '#A78BFA', '#EE86BC', '#77777F'],
 };
 
 export type Theme = typeof light;
