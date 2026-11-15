@@ -41,20 +41,24 @@ export function TypedAmount({ children, style }: { children: string; style?: Sty
     return () => clearTimeout(timer);
   }, [children, hidden, blocked]);
 
-  if (hidden) {
-    return <PrivateText style={style}>{children}</PrivateText>;
-  }
-  // Der unsichtbare Text hält Höhe und Breite stabil (der längere von altem und neuem Wert),
-  // darüber liegt der getippte Stand, der frei wachsen darf, ohne umzubrechen.
+  // Der unsichtbare Text hält Höhe und Breite in beiden Modi stabil (der längere von altem
+  // und neuem Wert), damit die Seite beim Auge-Umschalten nicht springt. Darüber liegt der
+  // getippte Stand bzw. im Privatsphäre-Modus der verwischte Platzhalter.
   const sizing = display.length > children.length ? display : children;
   return (
     <View style={{ alignSelf: 'flex-start' }}>
       <Text style={[style, { opacity: 0 }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         {sizing}
       </Text>
-      <Text style={[style, { position: 'absolute', left: 0, top: 0 }]} accessibilityLabel={children}>
-        {display}
-      </Text>
+      {hidden ? (
+        <PrivateText containerStyle={{ position: 'absolute', left: 0, top: 0 }} style={style}>
+          {children}
+        </PrivateText>
+      ) : (
+        <Text style={[style, { position: 'absolute', left: 0, top: 0 }]} accessibilityLabel={children}>
+          {display}
+        </Text>
+      )}
     </View>
   );
 }
