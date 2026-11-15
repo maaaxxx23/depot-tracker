@@ -286,7 +286,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
               disabled={!drafts.some((d) => d.isin)}
               style={({ pressed }) => ({ flex: 1, backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: !drafts.some((d) => d.isin) ? 0.4 : pressed ? 0.7 : 1 })}
             >
-              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Übernehmen</Text>
+              <Text style={{ color: theme.onAccent, fontSize: 15, fontWeight: '600' }}>Übernehmen</Text>
             </Pressable>
             <Pressable onPress={() => setDrafts(null)} style={({ pressed }) => ({ flex: 1, backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}>
               <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>Verwerfen</Text>
@@ -296,7 +296,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
       ) : (
         funds.length > 0 && (
           <Pressable onPress={importMany} disabled={busy} style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: busy ? 0.4 : pressed ? 0.7 : 1 })}>
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Alle Listen auf einmal importieren</Text>
+            <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Alle Listen auf einmal importieren</Text>
           </Pressable>
         )
       )}

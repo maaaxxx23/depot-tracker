@@ -13,7 +13,7 @@ export function InfoDot({ title, text }: { title: string; text: string }) {
       accessibilityLabel={`Erklärung zu ${title}`}
       style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
     >
-      <Ionicons name="information-circle-outline" size={17} color={theme.muted} />
+      <Ionicons name="information-circle-outline" size={17} color={theme.accent} />
     </Pressable>
   );
 }

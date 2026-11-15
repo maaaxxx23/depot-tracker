@@ -84,7 +84,7 @@ export function AllocationSheet({ visible, onClose, positions, targets, allocati
         onPress={save}
         style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: !valid ? 0.4 : pressed ? 0.7 : 1 })}
       >
-        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Speichern</Text>
+        <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Speichern</Text>
       </Pressable>
       <Pressable onPress={fillCurrent} style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}>
         <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>Heutige Aufteilung eintragen</Text>

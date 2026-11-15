@@ -96,7 +96,7 @@ export function LoginSheet({ visible, setup, onClose, onSynced }: Props) {
       onPress={onPress}
       style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: disabled ? 0.4 : pressed ? 0.7 : 1 })}
     >
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{label}</Text>
+      <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>{label}</Text>
     </Pressable>
   );
 

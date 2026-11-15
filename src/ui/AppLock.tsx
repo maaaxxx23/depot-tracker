@@ -141,7 +141,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
               accessibilityRole="button"
               style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
             >
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
+              <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
             </Pressable>
           </>
         )}

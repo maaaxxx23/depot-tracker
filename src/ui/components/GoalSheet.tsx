@@ -131,7 +131,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           opacity: pressed ? 0.6 : 1,
         })}
       >
-        <Text style={{ color: adopted ? '#fff' : theme.accent, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
+        <Text style={{ color: adopted ? theme.onAccent : theme.accent, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
       </Pressable>
     );
   };
@@ -214,7 +214,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           onPress={save}
           style={({ pressed }) => ({ backgroundColor: unchanged ? theme.chip : theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: !valid && !unchanged ? 0.4 : pressed ? 0.7 : 1 })}
         >
-          <Text style={{ color: unchanged ? theme.muted : '#fff', fontSize: 16, fontWeight: '600' }}>{unchanged ? 'Ziel gesetzt' : goal ? 'Ziel ändern' : 'Ziel festlegen'}</Text>
+          <Text style={{ color: unchanged ? theme.muted : theme.onAccent, fontSize: 16, fontWeight: '600' }}>{unchanged ? 'Ziel gesetzt' : goal ? 'Ziel ändern' : 'Ziel festlegen'}</Text>
         </Pressable>
         {goal ? (
           <Pressable onPress={() => onChangeGoal(null)} style={{ paddingVertical: 6, alignItems: 'center' }}>

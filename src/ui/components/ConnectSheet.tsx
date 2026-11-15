@@ -300,7 +300,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
             onPress={save}
             style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: !complete || saving ? 0.4 : pressed ? 0.7 : 1 })}
           >
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Speichern</Text>
+            <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Speichern</Text>
           </Pressable>
         </>
       )}
@@ -334,7 +334,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
                     opacity: pressed ? 0.7 : 1,
                   })}
                 >
-                  <Text style={{ color: autoLock === m ? '#fff' : theme.text, fontSize: 14, fontWeight: '600' }}>{m === 0 ? 'Aus' : `${m} Min.`}</Text>
+                  <Text style={{ color: autoLock === m ? theme.onAccent : theme.text, fontSize: 14, fontWeight: '600' }}>{m === 0 ? 'Aus' : `${m} Min.`}</Text>
                 </Pressable>
               ))}
             </View>
@@ -361,7 +361,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
                 opacity: pressed ? 0.7 : 1,
               })}
             >
-              <Text style={{ color: mode === c.value ? '#fff' : theme.text, fontSize: 14, fontWeight: '600' }}>{c.label}</Text>
+              <Text style={{ color: mode === c.value ? theme.onAccent : theme.text, fontSize: 14, fontWeight: '600' }}>{c.label}</Text>
             </Pressable>
           ))}
         </View>
