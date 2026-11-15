@@ -10,7 +10,13 @@ import { useStyles } from './styles';
  * sind native Modals und liegen ÜBER den Overlays der App, deshalb decken sie sich über
  * ShieldOverlay selbst ab.
  */
-const ShieldContext = createContext<{ locked: boolean; covered: boolean; unlock: () => void }>({ locked: false, covered: false, unlock: () => {} });
+const ShieldContext = createContext<{ locked: boolean; covered: boolean; veiled: boolean; unlock: () => void }>({
+  locked: false,
+  covered: false,
+  // true, solange der Vorhang noch zu sehen ist (auch während er sich gerade öffnet)
+  veiled: false,
+  unlock: () => {},
+});
 
 /** Ist die App gerade verdeckt (gesperrt oder nicht im Vordergrund)? Z. B. für Einblendungen, die warten sollen. */
 export function useShield() {
@@ -171,7 +177,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   const curtain = coverMounted || locked !== false;
 
   return (
-    <ShieldContext.Provider value={{ locked: locked !== false, covered: away, unlock }}>
+    <ShieldContext.Provider value={{ locked: locked !== false, covered: away, veiled: coverMounted, unlock }}>
       <View style={{ flex: 1 }}>
         {/* Die App bleibt auch gesperrt am Leben, damit z. B. eine laufende comdirect-Anmeldung
             den Wechsel zur photoTAN-App überlebt. Berührungen werden nicht abgefangen, nur ihr

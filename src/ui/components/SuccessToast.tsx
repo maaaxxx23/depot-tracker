@@ -14,10 +14,10 @@ interface Props {
 /** Kurze Erfolgs-Einblendung oben: schwebt herein, bleibt zwei Sekunden, löst sich auf. */
 export function SuccessToast({ message, topInset, onDone }: Props) {
   const { theme } = useStyles();
-  const { locked, covered } = useShield();
-  // Solange Sperrbildschirm oder Vorhang davorliegen, wartet die Einblendung –
-  // sonst liefe sie unsichtbar ab, etwa während der Code-Eingabe nach einem App-Wechsel
-  const blocked = locked || covered;
+  const { locked, covered, veiled } = useShield();
+  // Solange Sperrbildschirm oder Vorhang davorliegen (auch noch beim Aufziehen), wartet die
+  // Einblendung – sonst liefe sie unsichtbar ab, etwa während der Code-Eingabe nach einem App-Wechsel
+  const blocked = locked || covered || veiled;
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

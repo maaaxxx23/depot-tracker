@@ -106,11 +106,18 @@ export function DashboardScreen() {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const bump = () => setTick((t) => t + 1);
-    const sub = AppState.addEventListener('change', (state) => state === 'active' && bump());
+    let delayed: ReturnType<typeof setTimeout> | null = null;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      // Erst Vorhang und Tipp-Animation den Vortritt lassen, dann die Kurse nachladen
+      if (delayed) clearTimeout(delayed);
+      delayed = setTimeout(bump, 1000);
+    });
     const timer = setInterval(bump, 15 * 60 * 1000);
     return () => {
       sub.remove();
       clearInterval(timer);
+      if (delayed) clearTimeout(delayed);
     };
   }, []);
   const data = useMemo(

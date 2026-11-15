@@ -14,8 +14,9 @@ const TYPE_MS = 45;
  */
 export function TypedAmount({ children, style }: { children: string; style?: StyleProp<TextStyle> }) {
   const { hidden } = usePrivacy();
-  const { locked, covered } = useShield();
-  const blocked = locked || covered;
+  const { locked, covered, veiled } = useShield();
+  // Auch warten, solange der Vorhang noch offen schwingt – sonst tippt die Zahl unsichtbar
+  const blocked = locked || covered || veiled;
   const [display, setDisplay] = useState('');
   const displayRef = useRef(display);
   displayRef.current = display;
@@ -25,20 +26,26 @@ export function TypedAmount({ children, style }: { children: string; style?: Sty
       setDisplay('');
       return;
     }
-    let timer: ReturnType<typeof setTimeout>;
-    const step = () => {
-      const current = displayRef.current;
-      if (current === children) return;
-      if (children.startsWith(current)) {
-        setDisplay(children.slice(0, current.length + 1));
-        timer = setTimeout(step, TYPE_MS);
-      } else {
-        setDisplay(current.slice(0, -1));
-        timer = setTimeout(step, ERASE_MS);
-      }
+    // Zeitbasiert statt Schritt für Schritt: Ist der JavaScript-Thread kurz beschäftigt
+    // (z. B. Kurs-Nachladen beim Aktivieren), holt die Animation auf, statt sich zu dehnen.
+    const startText = displayRef.current;
+    if (startText === children) return;
+    let prefix = 0;
+    while (prefix < startText.length && prefix < children.length && startText[prefix] === children[prefix]) prefix++;
+    const eraseCount = startText.length - prefix;
+    const start = Date.now();
+    const at = (elapsed: number) => {
+      const erased = Math.min(eraseCount, Math.floor(elapsed / ERASE_MS));
+      if (erased < eraseCount) return startText.slice(0, startText.length - erased);
+      const typed = Math.min(children.length - prefix, Math.floor((elapsed - eraseCount * ERASE_MS) / TYPE_MS));
+      return children.slice(0, prefix + typed);
     };
-    timer = setTimeout(step, TYPE_MS);
-    return () => clearTimeout(timer);
+    const id = setInterval(() => {
+      const next = at(Date.now() - start);
+      if (next !== displayRef.current) setDisplay(next);
+      if (next === children) clearInterval(id);
+    }, 30);
+    return () => clearInterval(id);
   }, [children, hidden, blocked]);
 
   // Der unsichtbare Text hält Höhe und Breite in beiden Modi stabil (der längere von altem
