@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Slider from '@react-native-community/slider';
 import { withdrawalPreference } from '../../data/store';
 import { GoalProjection, MAX_RETURN, RETURN_STEP, Savings } from '../../finance/savings';
 import {
@@ -10,6 +9,7 @@ import {
   CONSUME_YEARS_DEFAULT,
   CONSUME_YEARS_MAX,
   CONSUME_YEARS_MIN,
+  CONSUME_YEARS_STEP,
   monthlyFromCapital,
   roundCapital,
 } from '../../finance/withdrawal';
@@ -74,8 +74,24 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
   };
   // Im Privatsphäre-Modus rechnet die App mit dem gespeicherten Wert weiter, ohne ihn zu zeigen
   const drawMonthly = hidden && draw === '' ? storedDraw ?? 0 : Number(draw) || 0;
-  const saveYears = (next: number) => {
+  const setYearsClamped = (v: number) => {
+    const next = Math.min(CONSUME_YEARS_MAX, Math.max(CONSUME_YEARS_MIN, Math.round(v)));
+    setYears(next);
     if (drawMonthly > 0) withdrawalPreference.set({ monthly: drawMonthly, years: next }).catch(() => {});
+  };
+  // Antippen der Jahreszahl: genaues Jahr eingeben, auch zwischen den 5er-Schritten
+  const askYears = () => {
+    Alert.prompt(
+      'Verzehr-Dauer',
+      `Jahre zwischen ${CONSUME_YEARS_MIN} und ${CONSUME_YEARS_MAX}`,
+      (text) => {
+        const n = Number((text ?? '').replace(/\D/g, ''));
+        if (n > 0) setYearsClamped(n);
+      },
+      'plain-text',
+      String(years),
+      'number-pad',
+    );
   };
   const preserve = capitalToPreserve(drawMonthly, annualReturn);
   const consume = capitalToConsume(drawMonthly, annualReturn, years);
@@ -197,22 +213,31 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           <Text style={[styles.text, { color: theme.muted }]}>€ im Monat</Text>
         </View>
         {drawMonthly > 0 && (
-          <View style={{ gap: 2 }}>
-            <View style={[styles.row, { justifyContent: 'space-between' }]}>
-              <Text style={styles.text}>Verzehr-Dauer</Text>
-              <Text style={[styles.text, styles.number, { fontWeight: '600' }]}>{years} Jahre</Text>
+          <View style={[styles.row, { justifyContent: 'space-between' }]}>
+            <Text style={styles.text}>Verzehr-Dauer</Text>
+            <View style={[styles.row, { gap: 12 }]}>
+              <Pressable
+                onPress={() => setYearsClamped(years - CONSUME_YEARS_STEP)}
+                disabled={years <= CONSUME_YEARS_MIN}
+                hitSlop={8}
+                accessibilityLabel="Verzehr-Dauer verringern"
+                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years <= CONSUME_YEARS_MIN ? 0.35 : pressed ? 0.6 : 1 })}
+              >
+                <Ionicons name="remove" size={18} color={theme.text} />
+              </Pressable>
+              <Pressable onPress={askYears} hitSlop={6} accessibilityLabel="Verzehr-Dauer genau eingeben">
+                <Text style={[styles.text, styles.number, { fontWeight: '600', color: theme.accent }]}>{years} Jahre</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setYearsClamped(years + CONSUME_YEARS_STEP)}
+                disabled={years >= CONSUME_YEARS_MAX}
+                hitSlop={8}
+                accessibilityLabel="Verzehr-Dauer erhöhen"
+                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years >= CONSUME_YEARS_MAX ? 0.35 : pressed ? 0.6 : 1 })}
+              >
+                <Ionicons name="add" size={18} color={theme.text} />
+              </Pressable>
             </View>
-            <Slider
-              minimumValue={CONSUME_YEARS_MIN}
-              maximumValue={CONSUME_YEARS_MAX}
-              step={1}
-              value={years}
-              onValueChange={(v) => setYears(Math.round(v))}
-              onSlidingComplete={(v) => saveYears(Math.round(v))}
-              minimumTrackTintColor={theme.accent}
-              maximumTrackTintColor={theme.chip}
-              accessibilityLabel="Verzehr-Dauer in Jahren"
-            />
           </View>
         )}
       </View>
@@ -225,23 +250,32 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           ]}
         />
       )}
-      {drawMonthly > 0 && preserve !== null && (
-        <Pressable
-          onPress={() => onChangeGoal(roundCapital(preserve))}
-          accessibilityRole="button"
-          style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
-        >
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>Kapitalerhalt als Wunschbetrag übernehmen</Text>
-        </Pressable>
-      )}
-      {drawMonthly > 0 && consume !== null && (
-        <Pressable
-          onPress={() => onChangeGoal(roundCapital(consume))}
-          accessibilityRole="button"
-          style={({ pressed }) => ({ borderColor: theme.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
-        >
-          <Text style={{ color: theme.accent, fontSize: 16, fontWeight: '600', textAlign: 'center' }}>Verzehr über {years} Jahre als Wunschbetrag übernehmen</Text>
-        </Pressable>
+      {drawMonthly > 0 && (preserve !== null || consume !== null) && (
+        <>
+          <View style={[styles.row, { gap: 10 }]}>
+            {preserve !== null && (
+              <Pressable
+                onPress={() => onChangeGoal(roundCapital(preserve))}
+                accessibilityRole="button"
+                accessibilityLabel="Kapitalerhalt-Depot als Wunschbetrag übernehmen"
+                style={({ pressed }) => ({ flex: 1, backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+              >
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', textAlign: 'center' }}>Kapitalerhalt als Ziel</Text>
+              </Pressable>
+            )}
+            {consume !== null && (
+              <Pressable
+                onPress={() => onChangeGoal(roundCapital(consume))}
+                accessibilityRole="button"
+                accessibilityLabel={`Verzehr-Depot über ${years} Jahre als Wunschbetrag übernehmen`}
+                style={({ pressed }) => ({ flex: 1, borderColor: theme.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+              >
+                <Text style={{ color: theme.accent, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>Verzehr als Ziel</Text>
+              </Pressable>
+            )}
+          </View>
+          <Text style={[styles.small, { paddingHorizontal: 4 }]}>Übernimmt den jeweiligen Betrag als Wunschbetrag für dein Depot.</Text>
+        </>
       )}
       {drawMonthly > 0 && (
         <Text style={[styles.small, { paddingHorizontal: 4 }]}>
