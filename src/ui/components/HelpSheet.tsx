@@ -8,6 +8,8 @@ import { useStyles } from '../styles';
 interface Props {
   visible: boolean;
   onClose: () => void;
+  /** Schließt die Hilfe und zeigt das Willkommens-Blatt samt Tour erneut */
+  onReplayWelcome?: () => void;
 }
 
 type Tab = 'guide' | 'faq';
@@ -16,7 +18,7 @@ type Tab = 'guide' | 'faq';
  * Anleitung und häufige Fragen, als eigener Bereich. Überschriften und Fragen heben sich
  * durch Goldgelb, Größe und Gewicht deutlich vom Fließtext ab; der Text selbst ist ruhiger.
  */
-export function HelpSheet({ visible, onClose }: Props) {
+export function HelpSheet({ visible, onClose, onReplayWelcome }: Props) {
   const { theme, styles } = useStyles();
   const [tab, setTab] = useState<Tab>('guide');
   const [open, setOpen] = useState<string | null>(null);
@@ -54,6 +56,11 @@ export function HelpSheet({ visible, onClose }: Props) {
 
   return (
     <Sheet visible={visible} onClose={onClose} title="Anleitung & FAQ">
+      {onReplayWelcome && (
+        <Pressable onPress={onReplayWelcome} accessibilityRole="button" hitSlop={4} style={({ pressed }) => ({ alignSelf: 'flex-start', paddingHorizontal: 4, opacity: pressed ? 0.6 : 1 })}>
+          <Text style={{ fontSize: 15, color: theme.accent, fontWeight: '600' }}>Willkommens-Tour erneut ansehen</Text>
+        </Pressable>
+      )}
       {/* Umschalter wie beim Chart */}
       <View style={{ flexDirection: 'row', backgroundColor: theme.chip, borderRadius: 10, padding: 3 }}>
         {(['guide', 'faq'] as const).map((t) => (

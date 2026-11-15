@@ -495,7 +495,7 @@ export function DashboardScreen() {
           setSheet('help');
         }}
       />
-      <HelpSheet visible={sheet === 'help'} onClose={() => setSheet(null)} />
+      <HelpSheet visible={sheet === 'help'} onClose={() => setSheet(null)} onReplayWelcome={() => setSheet('welcome')} />
       <CompositionSheet
         visible={sheet === 'composition'}
         onClose={() => setSheet(null)}
