@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { dateTime, eur, pct, signedEur } from '../format';
 import { PrivateText, usePrivacy } from '../privacy';
 import { signColor, useStyles } from '../styles';
+import { TypedAmount } from './TypedAmount';
 
 interface Props {
   value: number;
@@ -42,9 +43,9 @@ export function Hero({ value, gain, irr, periodLabel, updatedAt, holdingsFrom, s
         </View>
       </View>
       <Pressable onLongPress={onPreviewVisit} delayLongPress={500} disabled={!onPreviewVisit} style={{ alignSelf: 'flex-start' }}>
-        <PrivateText style={[styles.number, { fontSize: 44, fontWeight: '700', color: theme.text, letterSpacing: -0.5 }]}>
+        <TypedAmount style={[styles.number, { fontSize: 44, fontWeight: '700', color: theme.text, letterSpacing: -0.5 }]}>
           {`${holdingsFrom ? '≈ ' : ''}${eur(value)}`}
-        </PrivateText>
+        </TypedAmount>
       </Pressable>
       {/* Eine Zeile statt langer Erklärung; das „≈“ oben kennzeichnet die Schätzung */}
       <Text style={styles.small}>
