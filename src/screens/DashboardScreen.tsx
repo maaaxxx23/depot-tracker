@@ -38,6 +38,7 @@ import { LoginSheet } from '../ui/components/LoginSheet';
 import { PositionList, positionColor } from '../ui/components/PositionList';
 import { PositionSheet } from '../ui/components/PositionSheet';
 import { SuccessToast } from '../ui/components/SuccessToast';
+import { useShield } from '../ui/AppLock';
 import { dateTime, monthYear } from '../ui/format';
 import { successFeedback } from '../ui/haptics';
 import { useStyles } from '../ui/styles';
@@ -215,30 +216,34 @@ export function DashboardScreen() {
     return { gain, rel: gain / invested };
   }, [data, positions]);
 
-  // Nach einem comdirect-Abruf an die Sicherung erinnern, wenn die letzte älter als vier Wochen ist
+  // Nach einem comdirect-Abruf an die Sicherung erinnern, wenn die letzte älter als vier Wochen ist.
+  // Der Hinweis wartet, bis Vorhang und Sperre weg sind und der Erfolgs-Toast durch ist.
+  const { locked: shieldLocked, covered: shieldCovered } = useShield();
+  const [backupReminder, setBackupReminder] = useState<string | null>(null);
   const remindBackup = () => {
     lastBackup
       .get()
       .then((last) => {
         if (!backupDue(last)) return;
-        // Kurz warten, bis das Anmeldefenster geschlossen ist
-        setTimeout(
-          () =>
-            Alert.alert(
-              'Daten sichern?',
-              last
-                ? 'Deine letzte Sicherung ist über vier Wochen alt. Mit einer Sicherung in iCloud Drive bleiben die gesammelten Umsätze erhalten.'
-                : 'Du hast deine Daten noch nicht gesichert. Mit einer Sicherung in iCloud Drive bleiben die gesammelten Umsätze erhalten.',
-              [
-                { text: 'Später', style: 'cancel' },
-                { text: 'Jetzt sichern', onPress: () => exportBackup().catch((e) => Alert.alert('Sichern fehlgeschlagen', e instanceof Error ? e.message : String(e))) },
-              ],
-            ),
-          600,
+        setBackupReminder(
+          last
+            ? 'Deine letzte Sicherung ist über vier Wochen alt. Mit einer Sicherung in iCloud Drive bleiben die gesammelten Umsätze erhalten.'
+            : 'Du hast deine Daten noch nicht gesichert. Mit einer Sicherung in iCloud Drive bleiben die gesammelten Umsätze erhalten.',
         );
       })
       .catch(() => {});
   };
+  useEffect(() => {
+    if (!backupReminder || shieldLocked || shieldCovered) return;
+    const id = setTimeout(() => {
+      setBackupReminder(null);
+      Alert.alert('Daten sichern?', backupReminder, [
+        { text: 'Später', style: 'cancel' },
+        { text: 'Jetzt sichern', onPress: () => exportBackup().catch((e) => Alert.alert('Sichern fehlgeschlagen', e instanceof Error ? e.message : String(e))) },
+      ]);
+    }, 2800);
+    return () => clearTimeout(id);
+  }, [backupReminder, shieldLocked, shieldCovered]);
 
   return (
     <>
