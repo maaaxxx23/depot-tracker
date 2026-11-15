@@ -12,6 +12,7 @@ import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
 import { DetailRows } from './DetailRows';
+import { positionColor } from './PositionList';
 import { SecurityIds } from './SecurityIds';
 
 export interface PickedHoldings {
@@ -38,6 +39,8 @@ interface Props {
 
 /** So viele Länder werden einzeln gezeigt, der Rest als „Übrige Länder“. */
 const MAX_COUNTRIES = 10;
+/** Eingeklappt zeigt jeder Bereich so viele Zeilen; der Rest kommt über „Alle anzeigen“. */
+const PREVIEW_ROWS = 5;
 /** Unter diesem Wert passt eine Liste erkennbar nicht zum Namen des ETF; ab GOOD passt sie gut. */
 const POOR = 0.4;
 const GOOD = 0.75;
@@ -160,6 +163,30 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
   const withRest = (slices: Slice[]) => (uncovered > 0.0005 ? [...slices, { label: 'Nicht ausgewertet', weight: uncovered }] : slices);
   const chip = (pressed: boolean) => ({ backgroundColor: theme.chip, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, opacity: busy ? 0.4 : pressed ? 0.6 : 1 });
 
+  // Dieselbe Farbe wie in der Positionen-Karte auf der Startseite
+  const colorFor = (isin: string) => {
+    const index = positions.findIndex((p) => p.instrument.isin === isin);
+    return index >= 0 ? positionColor(theme, index) : theme.text;
+  };
+
+  // Lange Bereiche starten mit wenigen Zeilen und lassen sich aufklappen
+  const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
+  const limited = <T,>(key: string, items: T[]) => (expandedAreas[key] ? items : items.slice(0, PREVIEW_ROWS));
+  const moreButton = (key: string, total: number) =>
+    total > PREVIEW_ROWS ? (
+      <Pressable
+        onPress={() => {
+          tapFeedback();
+          setExpandedAreas((prev) => ({ ...prev, [key]: !prev[key] }));
+        }}
+        hitSlop={6}
+        accessibilityRole="button"
+        style={({ pressed }) => ({ alignSelf: 'flex-start', paddingHorizontal: 4, opacity: pressed ? 0.6 : 1 })}
+      >
+        <Text style={[styles.small, { color: theme.accent, fontWeight: '600' }]}>{expandedAreas[key] ? 'Weniger anzeigen' : `Alle ${total} anzeigen`}</Text>
+      </Pressable>
+    ) : null;
+
   return (
     <Sheet visible={visible} onClose={onClose} title="Was steckt drin">
       {result.covered > 0 ? (
@@ -170,23 +197,29 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
             </Text>
           )}
           <Text style={heading}>Länder</Text>
-          <Bars slices={withRest(countries)} color={theme.accent} />
+          <Bars slices={limited('countries', withRest(countries))} color={theme.accent} />
+          {moreButton('countries', withRest(countries).length)}
           <Text style={heading}>Branchen</Text>
-          <Bars slices={withRest(result.sectors)} color={theme.benchmark} />
+          <Bars slices={limited('sectors', withRest(result.sectors))} color={theme.benchmark} />
+          {moreButton('sectors', withRest(result.sectors).length)}
           <Text style={heading}>Größte Firmen in deinem Depot</Text>
           <DetailRows
-            rows={result.companies.map((c, i) => ({
-              label: `${i + 1}. ${c.label}`,
-              hint: `${c.country} · ${industryOf(c.key) ? industryInfo(industryOf(c.key)!).label : c.sector}${c.sources > 1 ? ` · in ${c.sources} deiner Wertpapiere` : ''}`,
-              value: percent(c.weight),
-            }))}
+            rows={limited(
+              'companies',
+              result.companies.map((c, i) => ({
+                label: `${i + 1}. ${c.label}`,
+                hint: `${c.country} · ${industryOf(c.key) ? industryInfo(industryOf(c.key)!).label : c.sector}${c.sources > 1 ? ` · in ${c.sources} deiner Wertpapiere` : ''}`,
+                value: percent(c.weight),
+              })),
+            )}
           />
+          {moreButton('companies', result.companies.length)}
 
           <Text style={heading}>Womit die größten Firmen ihr Geld verdienen</Text>
           {areas.slices.length > 0 ? (
             <>
               <View style={[styles.card, { gap: 0, paddingVertical: 4 }]}>
-                {areas.slices.map((a, i) => (
+                {limited('areas', areas.slices).map((a, i) => (
                   <View key={a.label} style={[{ paddingVertical: 12, gap: 3 }, i > 0 && styles.divider]}>
                     <View style={[styles.row, { justifyContent: 'space-between', gap: 12 }]}>
                       <Text style={[styles.text, { flex: 1, fontWeight: '600' }]}>{a.label}</Text>
@@ -197,6 +230,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
                   </View>
                 ))}
               </View>
+              {moreButton('areas', areas.slices.length)}
               <Text style={[styles.small, { paddingHorizontal: 4 }]}>
                 Gerechnet aus {areas.known} der {result.companies.length} größten Firmen, die zusammen {percent(areas.covered)} deines Depots ausmachen. Die vielen kleineren
                 Firmen sind hier nicht enthalten. Die Einordnung stammt von Yahoo.{pending > 0 ? ` ${pending} Firmen werden noch nachgeschlagen.` : ''}
@@ -212,14 +246,16 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
             <>
               <Text style={heading}>Überschneidungen zwischen deinen ETFs</Text>
               <View style={[styles.card, { gap: 0, paddingVertical: 4 }]}>
-                {overlap.pairs.map((pair, i) => {
+                {limited('pairs', overlap.pairs).map((pair, i) => {
                   const color = pair.level === 'high' ? theme.warn : pair.level === 'medium' ? theme.text : theme.positive;
                   const partial = Math.min(pair.coverageA, pair.coverageB) < 0.9;
                   return (
                     <View key={`${pair.a.instrument.isin}-${pair.b.instrument.isin}`} style={[{ paddingVertical: 12, gap: 3 }, i > 0 && styles.divider]}>
                       <View style={[styles.row, { justifyContent: 'space-between', gap: 12 }]}>
                         <Text style={[styles.text, { flex: 1, fontWeight: '600' }]}>
-                          {pair.a.instrument.shortName} und {pair.b.instrument.shortName}
+                          <Text style={{ color: colorFor(pair.a.instrument.isin) }}>{pair.a.instrument.shortName}</Text>
+                          <Text style={{ color: theme.muted, fontWeight: '400' }}> und </Text>
+                          <Text style={{ color: colorFor(pair.b.instrument.isin) }}>{pair.b.instrument.shortName}</Text>
                         </Text>
                         <Text style={[styles.text, styles.number, { fontWeight: '700', color }]}>{partial ? 'mind. ' : ''}{percent(pair.overlap)}</Text>
                       </View>
@@ -239,6 +275,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
                   );
                 })}
               </View>
+              {moreButton('pairs', overlap.pairs.length)}
               <Text style={[styles.small, { paddingHorizontal: 4 }]}>
                 Die Prozentzahl sagt, welcher Teil beider ETFs in denselben Firmen mit demselben Gewicht steckt. 100 % wären zwei gleiche ETFs, 0 % zwei völlig
                 verschiedene.{overlap.duplicatedCount > 0 ? ` Insgesamt liegen ${percent(overlap.duplicated)} deines Depots in ${overlap.duplicatedCount.toLocaleString('de-DE')} Firmen, die du über mehrere ETFs hältst.` : ''}
@@ -312,7 +349,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
           return (
             <View key={p.instrument.isin} style={[styles.row, { paddingVertical: 12, gap: 10 }, i > 0 && styles.divider]}>
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>{p.instrument.shortName}</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colorFor(p.instrument.isin) }}>{p.instrument.shortName}</Text>
                 {/* Zum Suchen beim Anbieter: Antippen kopiert die jeweilige Nummer */}
                 <View style={{ marginVertical: 2 }}>
                   <SecurityIds isin={p.instrument.isin} wkn={p.instrument.wkn} />
