@@ -20,6 +20,8 @@ interface Props {
   setup: Setup | null;
   /** Tour-Finale: zum Schutz-Bereich scrollen und ihn mit Face-ID-Tipp hervorheben */
   highlightSchutz?: boolean;
+  /** Beendet die Hervorhebung: Sperre wurde eingeschaltet oder „Später“ gewählt */
+  onSchutzHighlightDone?: () => void;
   onClose: () => void;
   onSaved: (setup: Setup) => void;
   onDisconnected: () => void;
@@ -41,7 +43,7 @@ function KeyboardBar({ label, onPress }: { label: string; onPress: () => void })
 }
 
 /** Einrichtung des comdirect-Zugangs; alles landet im iOS-Schlüsselbund. */
-export function ConnectSheet({ visible, setup, highlightSchutz, onClose, onSaved, onDisconnected, onRestored }: Props) {
+export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighlightDone, onClose, onSaved, onDisconnected, onRestored }: Props) {
   const { theme, styles } = useStyles();
   // Tour-Finale: nach dem Öffnen zum Schutz-Bereich scrollen
   const sheetScroll = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -101,6 +103,8 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onClose, onSaved
     }
     setLock(on);
     appLockPreference.set(on).catch(() => {});
+    // Tipp aus der Tour ist damit erledigt
+    if (on && highlightSchutz) onSchutzHighlightDone?.();
   };
 
   // Darstellung: dem System folgen oder fest hell bzw. dunkel
@@ -331,9 +335,14 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onClose, onSaved
       <Text onLayout={(e) => (schutzY.current = e.nativeEvent.layout.y)} style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Schutz</Text>
       <View style={[styles.card, { gap: 10 }, highlightSchutz && { borderWidth: 2, borderColor: theme.accent }]}>
         {highlightSchutz && (
-          <Text style={[styles.small, { color: theme.accent, fontWeight: '600' }]}>
-            Tipp aus der Tour: Schalte die Sperre am besten gleich ein – sie schützt App und Zugang mit Face ID.
-          </Text>
+          <View style={{ gap: 6 }}>
+            <Text style={[styles.small, { color: theme.accent, fontWeight: '600' }]}>
+              Tipp aus der Tour: Schalte die Sperre am besten gleich ein – sie schützt App und Zugang mit Face ID.
+            </Text>
+            <Pressable onPress={onSchutzHighlightDone} hitSlop={6} accessibilityRole="button" style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}>
+              <Text style={[styles.small, { color: theme.muted, fontWeight: '600' }]}>Später</Text>
+            </Pressable>
+          </View>
         )}
         <View style={[styles.row, { justifyContent: 'space-between' }]}>
           <Text style={[styles.label, { fontWeight: '600' }]}>Mit Face ID sperren</Text>

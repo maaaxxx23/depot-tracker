@@ -585,6 +585,7 @@ export function DashboardScreen() {
         visible={sheet === 'connect'}
         setup={setup}
         highlightSchutz={connectHighlight}
+        onSchutzHighlightDone={() => setConnectHighlight(false)}
         onClose={() => {
           setConnectHighlight(false);
           setSheet(null);
