@@ -17,6 +17,11 @@ export function tapFeedback() {
   if (enabled) Haptics.selectionAsync().catch(() => {});
 }
 
+/** Doppeltes Erfolgs-Signal, z. B. nach einer abgeschlossenen Aktualisierung. */
+export function successFeedback() {
+  if (enabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+}
+
 export function setHapticsEnabled(on: boolean) {
   enabled = on;
   hapticsPreference.set(on).catch(() => {});

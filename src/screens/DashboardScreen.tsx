@@ -37,7 +37,9 @@ import { InsightList } from '../ui/components/InsightList';
 import { LoginSheet } from '../ui/components/LoginSheet';
 import { PositionList, positionColor } from '../ui/components/PositionList';
 import { PositionSheet } from '../ui/components/PositionSheet';
+import { SuccessToast } from '../ui/components/SuccessToast';
 import { dateTime, monthYear } from '../ui/format';
+import { successFeedback } from '../ui/haptics';
 import { useStyles } from '../ui/styles';
 
 /** Zeiträume für Chart und Kopf; das laufende Jahr trägt die Jahreszahl als Beschriftung. */
@@ -86,6 +88,8 @@ export function DashboardScreen() {
   const [sheet, setSheet] = useState<OpenSheet>(null);
   const [selected, setSelected] = useState<PositionResult | null>(null);
   const [goal, setGoal] = useState<number | null>(null);
+  // Kurze Erfolgs-Einblendung nach einer abgeschlossenen Aktualisierung
+  const [toast, setToast] = useState<string | null>(null);
   const [annualReturn, setAnnualReturn] = useState(DEFAULT_RETURN);
   const [marks, setMarks] = useState<string[]>([]);
   const [targets, setTargets] = useState<TargetShares>({});
@@ -304,6 +308,7 @@ export function DashboardScreen() {
           onDone={visit.dismissBanner}
         />
       )}
+      {toast && <SuccessToast message={toast} topInset={insets.top} onDone={() => setToast(null)} />}
       <HelpSheet visible={sheet === 'help'} onClose={() => setSheet(null)} />
       <CompositionSheet
         visible={sheet === 'composition'}
@@ -381,6 +386,8 @@ export function DashboardScreen() {
           onSynced={(next) => {
             setStored(next);
             setSheet(null);
+            successFeedback();
+            setToast(`Aktualisiert · ${dateTime(new Date())}`);
             remindBackup();
           }}
         />
