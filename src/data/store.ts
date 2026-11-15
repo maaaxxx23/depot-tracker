@@ -33,6 +33,7 @@ const PREFERENCES = {
   appLock: 'app-lock-v1',
   autoLock: 'auto-lock-minutes-v1',
   appearance: 'appearance-v1',
+  haptics: 'haptics-v1',
 };
 
 const MAX_SNAPSHOTS = 2000;
@@ -150,6 +151,12 @@ export const withdrawalPreference = {
 export const appLockPreference = {
   get: () => readJson<boolean>(PREFERENCES.appLock, false),
   set: (on: boolean) => AsyncStorage.setItem(PREFERENCES.appLock, JSON.stringify(on)),
+};
+
+/** Haptisches Feedback beim Bestätigen; standardmäßig an. */
+export const hapticsPreference = {
+  get: () => readJson<boolean>(PREFERENCES.haptics, true),
+  set: (on: boolean) => AsyncStorage.setItem(PREFERENCES.haptics, JSON.stringify(on)),
 };
 
 /** Darstellung: dem System folgen oder fest hell bzw. dunkel. */

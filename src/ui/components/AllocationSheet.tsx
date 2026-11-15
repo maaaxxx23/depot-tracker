@@ -3,6 +3,7 @@ import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { AllocationRow, currentAsTargets, DEVIATION_LIMIT, TargetShares } from '../../finance/allocation';
 import type { PositionResult } from '../../finance/performance';
 import { percent, points, shortPercent } from '../format';
+import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
 import { positionColor } from './PositionList';
@@ -34,10 +35,14 @@ export function AllocationSheet({ visible, onClose, positions, targets, allocati
   const valid = sum === 100;
   const save = () => {
     Keyboard.dismiss();
+    tapFeedback();
     onChange(Object.fromEntries(positions.map((p) => [p.instrument.isin, (Number(inputs[p.instrument.isin]) || 0) / 100])));
     onClose();
   };
-  const fillCurrent = () => setInputs(Object.fromEntries(Object.entries(currentAsTargets(positions)).map(([isin, n]) => [isin, String(n)])));
+  const fillCurrent = () => {
+    tapFeedback();
+    setInputs(Object.fromEntries(Object.entries(currentAsTargets(positions)).map(([isin, n]) => [isin, String(n)])));
+  };
 
   return (
     <Sheet visible={visible} onClose={onClose} title="Zielaufteilung">

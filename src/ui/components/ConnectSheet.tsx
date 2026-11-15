@@ -4,10 +4,12 @@ import { Alert, InputAccessoryView, Keyboard, Platform, Pressable, Switch, Text,
 import { clearCredentials, saveCredentials, Setup } from '../../comdirect/credentials';
 import { applyCsv, exportBackup, importBackup, pickDepotCsv } from '../../data/backup';
 import type { StoredPortfolio } from '../../data/backupFormat';
-import { AppearanceMode, appLockPreference, autoLockPreference, clearStored } from '../../data/store';
+import { AppearanceMode, appLockPreference, autoLockPreference, clearStored, hapticsPreference } from '../../data/store';
 import { useAppearance } from '../appearance';
+import { setHapticsEnabled } from '../haptics';
 import { eur, monthYear } from '../format';
 import { Sheet } from '../Sheet';
+import { tapFeedback } from '../haptics';
 import { useStyles } from '../styles';
 import { InfoDot } from './InfoDot';
 
@@ -59,6 +61,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
     setEditing(!setup);
     appLockPreference.get().then(setLock).catch(() => {});
     autoLockPreference.get().then(setAutoLock).catch(() => {});
+    hapticsPreference.get().then(setHaptics).catch(() => {});
   }, [visible, setup]);
 
   // Zugangsdaten (Client ID, Secret) erst nach Face ID bzw. Geräte-Code zeigen.
@@ -98,10 +101,19 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
     { value: 'dark', label: 'Dunkel' },
   ];
 
+  // Haptisches Feedback beim Bestätigen; das Einschalten tickt zur Bestätigung gleich selbst
+  const [haptics, setHaptics] = useState(true);
+  const toggleHaptics = (on: boolean) => {
+    setHaptics(on);
+    setHapticsEnabled(on);
+    if (on) tapFeedback();
+  };
+
   // Auto-Sperre: Minuten ohne Berührung, nach denen sich die offene App selbst sperrt (0 = aus)
   const [autoLock, setAutoLock] = useState(0);
   const AUTO_LOCK_CHOICES = [0, 1, 5, 15];
   const chooseAutoLock = (minutes: number) => {
+    tapFeedback();
     setAutoLock(minutes);
     autoLockPreference.set(minutes).catch(() => {});
   };
@@ -109,6 +121,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
   const complete = clientId.trim() && clientSecret.trim() && /^\d{8}$/.test(username.trim()) && (setup || /^\d{6}$/.test(pin));
 
   const save = async () => {
+    tapFeedback();
     setSaving(true);
     try {
       const next = { clientId: clientId.trim(), clientSecret: clientSecret.trim(), username: username.trim() };
@@ -348,7 +361,10 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
           {APPEARANCE_CHOICES.map((c) => (
             <Pressable
               key={c.value}
-              onPress={() => setMode(c.value)}
+              onPress={() => {
+                tapFeedback();
+                setMode(c.value);
+              }}
               accessibilityRole="button"
               accessibilityState={{ selected: mode === c.value }}
               accessibilityLabel={`Darstellung ${c.label}`}
@@ -366,6 +382,10 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
           ))}
         </View>
         <Text style={styles.small}>„Automatisch“ folgt der iOS-Einstellung.</Text>
+        <View style={[styles.row, styles.divider, { justifyContent: 'space-between', paddingTop: 10 }]}>
+          <Text style={[styles.label, { fontWeight: '600' }]}>Haptisches Feedback</Text>
+          <Switch value={haptics} onValueChange={toggleHaptics} />
+        </View>
       </View>
 
       {/* Sicherung: gesammelte Umsätze überstehen so auch ein Löschen der App */}

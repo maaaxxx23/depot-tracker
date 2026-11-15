@@ -8,6 +8,7 @@ import type { IndustryCache } from '../../market/industries';
 import type { OverlapResult } from '../../finance/overlap';
 import type { PositionResult } from '../../finance/performance';
 import { percent } from '../format';
+import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
 import { DetailRows } from './DetailRows';
@@ -143,6 +144,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
 
   const applyDrafts = () => {
     if (!drafts) return;
+    tapFeedback();
     onSave(Object.fromEntries(drafts.filter((d) => d.isin).map((d) => [d.isin!, d.fund])));
     setDrafts(null);
   };

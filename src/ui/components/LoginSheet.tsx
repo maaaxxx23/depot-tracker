@@ -7,6 +7,7 @@ import type { ComdirectLogin } from '../../comdirect/login';
 import { beginLogin, finishLogin, WARN_OPEN_CHALLENGES } from '../../comdirect/sync';
 import { openChallenges } from '../../data/store';
 import type { StoredPortfolio } from '../../data/store';
+import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
 
@@ -93,7 +94,10 @@ export function LoginSheet({ visible, setup, onClose, onSynced }: Props) {
   const button = (label: string, onPress: () => void, disabled = false) => (
     <Pressable
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => {
+        tapFeedback();
+        onPress();
+      }}
       style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: disabled ? 0.4 : pressed ? 0.7 : 1 })}
     >
       <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>{label}</Text>

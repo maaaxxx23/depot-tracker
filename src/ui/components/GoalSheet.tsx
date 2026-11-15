@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Alert, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { withdrawalPreference } from '../../data/store';
+import { tapFeedback } from '../haptics';
 import { GoalProjection, MAX_RETURN, RETURN_STEP, Savings } from '../../finance/savings';
 import {
   capitalToConsume,
@@ -112,7 +112,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
     return (
       <Pressable
         onPress={() => {
-          Haptics.selectionAsync().catch(() => {});
+          tapFeedback();
           onChangeGoal(roundCapital(capital));
         }}
         accessibilityRole="button"
@@ -142,6 +142,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
   const unchanged = goal !== null && entered === Math.round(goal);
   const save = () => {
     Keyboard.dismiss();
+    tapFeedback();
     onChangeGoal(entered);
   };
 
