@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { withdrawalPreference } from '../../data/store';
 import { GoalProjection, MAX_RETURN, RETURN_STEP, Savings } from '../../finance/savings';
 import {
@@ -9,7 +10,6 @@ import {
   CONSUME_YEARS_DEFAULT,
   CONSUME_YEARS_MAX,
   CONSUME_YEARS_MIN,
-  CONSUME_YEARS_STEP,
   monthlyFromCapital,
   roundCapital,
 } from '../../finance/withdrawal';
@@ -74,9 +74,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
   };
   // Im Privatsphäre-Modus rechnet die App mit dem gespeicherten Wert weiter, ohne ihn zu zeigen
   const drawMonthly = hidden && draw === '' ? storedDraw ?? 0 : Number(draw) || 0;
-  const changeYears = (delta: number) => {
-    const next = Math.min(CONSUME_YEARS_MAX, Math.max(CONSUME_YEARS_MIN, years + delta));
-    setYears(next);
+  const saveYears = (next: number) => {
     if (drawMonthly > 0) withdrawalPreference.set({ monthly: drawMonthly, years: next }).catch(() => {});
   };
   const preserve = capitalToPreserve(drawMonthly, annualReturn);
@@ -199,29 +197,22 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           <Text style={[styles.text, { color: theme.muted }]}>€ im Monat</Text>
         </View>
         {drawMonthly > 0 && (
-          <View style={[styles.row, { justifyContent: 'space-between' }]}>
-            <Text style={styles.text}>Verzehr-Dauer</Text>
-            <View style={[styles.row, { gap: 12 }]}>
-              <Pressable
-                onPress={() => changeYears(-CONSUME_YEARS_STEP)}
-                disabled={years <= CONSUME_YEARS_MIN}
-                hitSlop={8}
-                accessibilityLabel="Verzehr-Dauer verringern"
-                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years <= CONSUME_YEARS_MIN ? 0.35 : pressed ? 0.6 : 1 })}
-              >
-                <Ionicons name="remove" size={18} color={theme.text} />
-              </Pressable>
+          <View style={{ gap: 2 }}>
+            <View style={[styles.row, { justifyContent: 'space-between' }]}>
+              <Text style={styles.text}>Verzehr-Dauer</Text>
               <Text style={[styles.text, styles.number, { fontWeight: '600' }]}>{years} Jahre</Text>
-              <Pressable
-                onPress={() => changeYears(CONSUME_YEARS_STEP)}
-                disabled={years >= CONSUME_YEARS_MAX}
-                hitSlop={8}
-                accessibilityLabel="Verzehr-Dauer erhöhen"
-                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years >= CONSUME_YEARS_MAX ? 0.35 : pressed ? 0.6 : 1 })}
-              >
-                <Ionicons name="add" size={18} color={theme.text} />
-              </Pressable>
             </View>
+            <Slider
+              minimumValue={CONSUME_YEARS_MIN}
+              maximumValue={CONSUME_YEARS_MAX}
+              step={1}
+              value={years}
+              onValueChange={(v) => setYears(Math.round(v))}
+              onSlidingComplete={(v) => saveYears(Math.round(v))}
+              minimumTrackTintColor={theme.accent}
+              maximumTrackTintColor={theme.chip}
+              accessibilityLabel="Verzehr-Dauer in Jahren"
+            />
           </View>
         )}
       </View>
@@ -241,6 +232,15 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
         >
           <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>Kapitalerhalt als Wunschbetrag übernehmen</Text>
+        </Pressable>
+      )}
+      {drawMonthly > 0 && consume !== null && (
+        <Pressable
+          onPress={() => onChangeGoal(roundCapital(consume))}
+          accessibilityRole="button"
+          style={({ pressed }) => ({ borderColor: theme.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+        >
+          <Text style={{ color: theme.accent, fontSize: 16, fontWeight: '600', textAlign: 'center' }}>Verzehr über {years} Jahre als Wunschbetrag übernehmen</Text>
         </Pressable>
       )}
       {drawMonthly > 0 && (

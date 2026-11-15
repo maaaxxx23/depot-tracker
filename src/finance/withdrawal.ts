@@ -13,7 +13,6 @@ export interface WithdrawalWish {
 export const CONSUME_YEARS_DEFAULT = 30;
 export const CONSUME_YEARS_MIN = 10;
 export const CONSUME_YEARS_MAX = 60;
-export const CONSUME_YEARS_STEP = 5;
 
 /** Rendite pro Monat, die aufs Jahr gerechnet `annualReturn` ergibt. */
 const monthlyRate = (annualReturn: number) => Math.pow(1 + annualReturn, 1 / 12) - 1;
