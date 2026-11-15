@@ -267,7 +267,7 @@ export function DashboardScreen() {
           <YearList years={years.years} onOpen={() => setSheet('years')} />
         </View>
         <PositionList positions={positions} onSelect={setSelected} allocation={allocation} onEditTargets={() => setSheet('allocation')} />
-        {data.source.kind === 'comdirect' && <CompositionCard result={composition} overlap={overlap} onOpen={() => setSheet('composition')} />}
+        {data.source.kind === 'comdirect' && <CompositionCard result={composition} overlap={overlap} positions={positions} onOpen={() => setSheet('composition')} />}
         {/* Fußzeile: stille Quellenangabe, darunter die beiden Links in einer Zeile */}
         <Text style={[styles.small, { textAlign: 'center', marginTop: 4 }]}>
           {data.source.kind === 'comdirect'

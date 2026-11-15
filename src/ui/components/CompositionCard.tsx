@@ -2,12 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import type { CompositionResult, Slice } from '../../finance/composition';
 import type { OverlapResult } from '../../finance/overlap';
+import type { PositionResult } from '../../finance/performance';
 import { percent } from '../format';
 import { useStyles } from '../styles';
+import { positionColor } from './PositionList';
 
 interface Props {
   result: CompositionResult;
   overlap: OverlapResult;
+  /** Positionen in der Reihenfolge der Startseite, für die ETF-Farben */
+  positions: PositionResult[];
   onOpen: () => void;
 }
 
@@ -18,10 +22,15 @@ const top = (slices: Slice[]) =>
     .join(' · ');
 
 /** Kurzfassung: die drei größten Länder und Branchen im Depot. Antippen öffnet die Details. */
-export function CompositionCard({ result, overlap, onOpen }: Props) {
+export function CompositionCard({ result, overlap, positions, onOpen }: Props) {
   const { theme, styles } = useStyles();
   const has = result.covered > 0;
   const strongest = overlap.pairs[0]?.level === 'high' ? overlap.pairs[0] : null;
+  // Dieselbe Farbe wie in der Positionen-Karte
+  const colorFor = (isin: string) => {
+    const index = positions.findIndex((p) => p.instrument.isin === isin);
+    return index >= 0 ? positionColor(theme, index) : theme.warn;
+  };
 
   return (
     <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel="Zusammensetzung des Depots öffnen" style={({ pressed }) => [styles.card, { gap: 8, opacity: pressed ? 0.6 : 1 }]}>
@@ -44,7 +53,8 @@ export function CompositionCard({ result, overlap, onOpen }: Props) {
           </View>
           {strongest && (
             <Text style={[styles.small, { color: theme.warn }]}>
-              Überschneidung: {strongest.a.instrument.shortName} und {strongest.b.instrument.shortName} zu {Math.round(strongest.overlap * 100)} %
+              Überschneidung: <Text style={{ color: colorFor(strongest.a.instrument.isin), fontWeight: '600' }}>{strongest.a.instrument.shortName}</Text> und{' '}
+              <Text style={{ color: colorFor(strongest.b.instrument.isin), fontWeight: '600' }}>{strongest.b.instrument.shortName}</Text> zu {Math.round(strongest.overlap * 100)} %
             </Text>
           )}
           {result.covered < 0.9995 && <Text style={styles.small}>Ausgewertet: {percent(result.covered)} des Depots</Text>}
