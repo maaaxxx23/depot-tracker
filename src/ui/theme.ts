@@ -9,7 +9,8 @@ const light = {
   // Warmes Gold als Akzent, an comdirect angelehnt; Schrift auf Gold nutzt onAccent
   accent: '#B98200',
   onAccent: '#1C1708',
-  benchmark: '#E08A1E',
+  // Vergleichslinie in Blau: hebt sich klar vom goldenen Depot ab
+  benchmark: '#2F6FEB',
   invested: '#9A9AA6',
   sale: '#8B5CF6',
   // Hilfebereich: eigenes warmes Goldgelb (bewusst nicht das comdirect-Gelb)
@@ -31,7 +32,7 @@ const dark: typeof light = {
   border: '#2E2E33',
   accent: '#F2C14E',
   onAccent: '#1C1708',
-  benchmark: '#F2A444',
+  benchmark: '#5B8DF6',
   invested: '#77777F',
   sale: '#A78BFA',
   help: '#F2C14E',
