@@ -23,7 +23,16 @@ const KEYS = {
 };
 
 // Bleiben auch nach „Zugang löschen“ erhalten (keine Depotdaten)
-const PREFERENCES = { chartMode: 'chart-mode-v1', goal: 'goal-v1', assumedReturn: 'assumed-return-v1', savingsMarks: 'savings-marks-v1', targetShares: 'target-shares-v1', withdrawal: 'withdrawal-v1', appLock: 'app-lock-v1' };
+const PREFERENCES = {
+  chartMode: 'chart-mode-v1',
+  goal: 'goal-v1',
+  assumedReturn: 'assumed-return-v1',
+  savingsMarks: 'savings-marks-v1',
+  targetShares: 'target-shares-v1',
+  withdrawal: 'withdrawal-v1',
+  appLock: 'app-lock-v1',
+  autoLock: 'auto-lock-minutes-v1',
+};
 
 const MAX_SNAPSHOTS = 2000;
 
@@ -140,6 +149,12 @@ export const withdrawalPreference = {
 export const appLockPreference = {
   get: () => readJson<boolean>(PREFERENCES.appLock, false),
   set: (on: boolean) => AsyncStorage.setItem(PREFERENCES.appLock, JSON.stringify(on)),
+};
+
+/** Automatische Sperre, wenn die App so viele Minuten nicht berührt wird; 0 = aus. Gerätespezifisch wie die App-Sperre. */
+export const autoLockPreference = {
+  get: () => readJson<number>(PREFERENCES.autoLock, 0),
+  set: (minutes: number) => AsyncStorage.setItem(PREFERENCES.autoLock, JSON.stringify(minutes)),
 };
 
 /** ETF-Listen und Branchen-Zwischenspeicher auf einmal, für Sichern und Wiederherstellen. */

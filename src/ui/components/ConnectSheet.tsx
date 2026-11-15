@@ -4,7 +4,7 @@ import { Alert, InputAccessoryView, Keyboard, Platform, Pressable, Switch, Text,
 import { clearCredentials, saveCredentials, Setup } from '../../comdirect/credentials';
 import { applyCsv, exportBackup, importBackup, pickDepotCsv } from '../../data/backup';
 import type { StoredPortfolio } from '../../data/backupFormat';
-import { appLockPreference, clearStored } from '../../data/store';
+import { appLockPreference, autoLockPreference, clearStored } from '../../data/store';
 import { eur, monthYear } from '../format';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
@@ -56,6 +56,7 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
     setPin('');
     setEditing(!setup);
     appLockPreference.get().then(setLock).catch(() => {});
+    autoLockPreference.get().then(setAutoLock).catch(() => {});
   }, [visible, setup]);
 
   // Zugangsdaten (Client ID, Secret) erst nach Face ID bzw. Geräte-Code zeigen.
@@ -85,6 +86,14 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
     }
     setLock(on);
     appLockPreference.set(on).catch(() => {});
+  };
+
+  // Auto-Sperre: Minuten ohne Berührung, nach denen sich die offene App selbst sperrt (0 = aus)
+  const [autoLock, setAutoLock] = useState(0);
+  const AUTO_LOCK_CHOICES = [0, 1, 5, 15];
+  const chooseAutoLock = (minutes: number) => {
+    setAutoLock(minutes);
+    autoLockPreference.set(minutes).catch(() => {});
   };
 
   const complete = clientId.trim() && clientSecret.trim() && /^\d{8}$/.test(username.trim()) && (setup || /^\d{6}$/.test(pin));
@@ -294,8 +303,35 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
         </View>
         <Text style={styles.small}>
           Beim Öffnen und nach dem Wechsel in eine andere App muss Depot Tracker erst mit Face ID oder dem Geräte-Code
-          entsperrt werden.
+          entsperrt werden. Im App-Wechsler zeigt die App nur ihr Symbol auf schwarzem Grund.
         </Text>
+        {lock && (
+          <>
+            <Text style={[styles.label, { fontWeight: '600', marginTop: 4 }]}>Automatisch sperren</Text>
+            <View style={[styles.row, { gap: 8 }]}>
+              {AUTO_LOCK_CHOICES.map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => chooseAutoLock(m)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: autoLock === m }}
+                  accessibilityLabel={m === 0 ? 'Auto-Sperre aus' : `Automatisch sperren nach ${m} Minuten`}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    backgroundColor: autoLock === m ? theme.accent : theme.chip,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ color: autoLock === m ? '#fff' : theme.text, fontSize: 14, fontWeight: '600' }}>{m === 0 ? 'Aus' : `${m} Min.`}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.small}>Sperrt die App auch dann, wenn sie offen liegen bleibt und so lange nicht berührt wird.</Text>
+          </>
+        )}
       </View>
 
       {/* Sicherung: gesammelte Umsätze überstehen so auch ein Löschen der App */}
