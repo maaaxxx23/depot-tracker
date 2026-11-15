@@ -3,6 +3,7 @@ import type { RawPortfolio, Snapshot } from '../comdirect/portfolio';
 import type { VisitSnapshot } from '../finance/visit';
 import type { IndustryCache } from '../market/industries';
 import type { MarketData } from '../market/yahoo';
+import type { WithdrawalWish } from '../finance/withdrawal';
 import type { BackupLists, BackupSettings, StoredPortfolio } from './backupFormat';
 import type { FundComposition } from './holdingsImport';
 
@@ -22,7 +23,7 @@ const KEYS = {
 };
 
 // Bleiben auch nach „Zugang löschen“ erhalten (keine Depotdaten)
-const PREFERENCES = { chartMode: 'chart-mode-v1', goal: 'goal-v1', assumedReturn: 'assumed-return-v1', savingsMarks: 'savings-marks-v1', targetShares: 'target-shares-v1', appLock: 'app-lock-v1' };
+const PREFERENCES = { chartMode: 'chart-mode-v1', goal: 'goal-v1', assumedReturn: 'assumed-return-v1', savingsMarks: 'savings-marks-v1', targetShares: 'target-shares-v1', withdrawal: 'withdrawal-v1', appLock: 'app-lock-v1' };
 
 const MAX_SNAPSHOTS = 2000;
 
@@ -129,6 +130,12 @@ export const targetSharesPreference = {
   set: (shares: Record<string, number>) => AsyncStorage.setItem(PREFERENCES.targetShares, JSON.stringify(shares)),
 };
 
+/** Wunsch-Entnahme für die Modellrechnung; null = keine festgelegt. */
+export const withdrawalPreference = {
+  get: () => readJson<WithdrawalWish | null>(PREFERENCES.withdrawal, null),
+  set: (wish: WithdrawalWish | null) => (wish === null ? AsyncStorage.removeItem(PREFERENCES.withdrawal) : AsyncStorage.setItem(PREFERENCES.withdrawal, JSON.stringify(wish))),
+};
+
 /** App-Sperre: beim Öffnen mit Face ID bzw. Geräte-Code entsperren. Bewusst gerätespezifisch, kommt nicht in die Sicherung. */
 export const appLockPreference = {
   get: () => readJson<boolean>(PREFERENCES.appLock, false),
@@ -148,8 +155,14 @@ export async function saveLists(lists: BackupLists): Promise<void> {
 
 /** Alle persönlichen Einstellungen auf einmal, für Sichern und Wiederherstellen. */
 export async function loadSettings(): Promise<BackupSettings> {
-  const [goal, assumedReturn, marks, targetShares] = await Promise.all([goalPreference.get(), assumedReturnPreference.get(), savingsMarks.get(), targetSharesPreference.get()]);
-  return { goal, assumedReturn, savingsMarks: marks, targetShares };
+  const [goal, assumedReturn, marks, targetShares, withdrawal] = await Promise.all([
+    goalPreference.get(),
+    assumedReturnPreference.get(),
+    savingsMarks.get(),
+    targetSharesPreference.get(),
+    withdrawalPreference.get(),
+  ]);
+  return { goal, assumedReturn, savingsMarks: marks, targetShares, withdrawal };
 }
 
 export async function saveSettings(settings: BackupSettings): Promise<void> {
@@ -157,6 +170,7 @@ export async function saveSettings(settings: BackupSettings): Promise<void> {
   if (settings.assumedReturn !== null) await assumedReturnPreference.set(settings.assumedReturn);
   await savingsMarks.set(settings.savingsMarks);
   await targetSharesPreference.set(settings.targetShares);
+  await withdrawalPreference.set(settings.withdrawal);
 }
 
 export async function clearStored(): Promise<void> {

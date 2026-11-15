@@ -208,14 +208,24 @@ async function main() {
     const currentStored = { raw: { positions: [{ quantity: { value: '2' } }], transactions: fresh }, fetchedAt: '2026-11-07T10:00:00.000Z', snapshots: [{ date: '2026-11-07', prices: { X: 110 } }] };
     const roundTrip = parseBackup(serializeBackup(backupStored, '2026-06-03T11:00:00.000Z'));
     check('Sicherung: Datei hin und zurück', JSON.stringify(roundTrip) === JSON.stringify(backupStored));
-    const settings = { goal: 100000, assumedReturn: 0.065, savingsMarks: ['IE00B4L5Y983'], targetShares: { IE00B4L5Y983: 0.7, US0378331005: 0.3 } };
+    const settings = { goal: 100000, assumedReturn: 0.065, savingsMarks: ['IE00B4L5Y983'], targetShares: { IE00B4L5Y983: 0.7, US0378331005: 0.3 }, withdrawal: { monthly: 1500, years: 30 } };
     const withSettings = serializeBackup(backupStored, 'x', settings);
     check('Sicherung: Einstellungen hin und zurück', JSON.stringify(parseBackupSettings(withSettings)) === JSON.stringify(settings));
     check('Sicherung: Depotdaten trotz Einstellungen unverändert', JSON.stringify(parseBackup(withSettings)) === JSON.stringify(backupStored));
     check('Sicherung: alte Datei ohne Einstellungen', JSON.stringify(parseBackupSettings(serializeBackup(backupStored, 'x'))) === JSON.stringify(NO_SETTINGS));
-    const odd = parseBackupSettings(JSON.stringify({ app: 'depot-tracker', version: 1, settings: { goal: 'viel', assumedReturn: 7, savingsMarks: ['A', 5], targetShares: { A: 0.6, B: 'x', C: 3 } } }));
-    check('Sicherung: unsinnige Einstellungen werden verworfen', odd.goal === null && odd.assumedReturn === null && odd.savingsMarks.join() === 'A' && JSON.stringify(odd.targetShares) === '{"A":0.6}');
-    const mergedSettings = mergeSettings({ goal: 50000, assumedReturn: null, savingsMarks: ['A'], targetShares: {} }, { goal: 100000, assumedReturn: 0.07, savingsMarks: ['A', 'B'], targetShares: { A: 1 } });
+    const odd = parseBackupSettings(
+      JSON.stringify({ app: 'depot-tracker', version: 1, settings: { goal: 'viel', assumedReturn: 7, savingsMarks: ['A', 5], targetShares: { A: 0.6, B: 'x', C: 3 }, withdrawal: { monthly: 'x', years: 30 } } }),
+    );
+    check('Sicherung: unsinnige Einstellungen werden verworfen', odd.goal === null && odd.assumedReturn === null && odd.savingsMarks.join() === 'A' && JSON.stringify(odd.targetShares) === '{"A":0.6}' && odd.withdrawal === null);
+    const mergedSettings = mergeSettings(
+      { goal: 50000, assumedReturn: null, savingsMarks: ['A'], targetShares: {}, withdrawal: null },
+      { goal: 100000, assumedReturn: 0.07, savingsMarks: ['A', 'B'], targetShares: { A: 1 }, withdrawal: { monthly: 2000, years: 25 } },
+    );
+    check('Sicherung: fehlende Wunsch-Entnahme kommt aus der Sicherung', mergedSettings.withdrawal?.monthly === 2000 && mergedSettings.withdrawal.years === 25);
+    check(
+      'Sicherung: vorhandene Wunsch-Entnahme bleibt',
+      mergeSettings({ ...NO_SETTINGS, withdrawal: { monthly: 900, years: 40 } }, { ...NO_SETTINGS, withdrawal: { monthly: 2000, years: 25 } }).withdrawal?.monthly === 900,
+    );
     check('Sicherung: fehlende Zielaufteilung kommt aus der Sicherung', mergedSettings.targetShares.A === 1);
     check('Sicherung: vorhandene Zielaufteilung bleibt', mergeSettings({ ...NO_SETTINGS, targetShares: { B: 1 } }, { ...NO_SETTINGS, targetShares: { A: 1 } }).targetShares.B === 1);
     check('Sicherung: vorhandenes Ziel bleibt, Fehlendes wird ergänzt', mergedSettings.goal === 50000 && mergedSettings.assumedReturn === 0.07 && mergedSettings.savingsMarks.join() === 'A,B');

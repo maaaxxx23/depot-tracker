@@ -6,6 +6,7 @@ import { analyzeYears, realizedSales } from '../src/finance/years';
 import { estimateVorabpauschale, pauschaleYear } from '../src/finance/vorabpauschale';
 import { analyzeAllocation, currentAsTargets } from '../src/finance/allocation';
 import { detectSavings, monthsToGoal, projectGoal } from '../src/finance/savings';
+import { capitalToConsume, capitalToPreserve, monthlyFromCapital, roundCapital } from '../src/finance/withdrawal';
 import { buildInsights, concentration, drawdownOfCurrentHoldings, nextMilestone, savingsStreak } from '../src/finance/insights';
 import { PortfolioData, Transaction } from '../src/types';
 
@@ -215,6 +216,30 @@ check(
   check('Ziel: Fortschritt', proj.progress, 0.5);
   check('Ziel: Monat ohne Kursgewinne', proj.withoutReturn === '2027-09' ? 1 : 0, 1);
   check('Ziel: mit Rendite nicht später', proj.withReturn! <= proj.withoutReturn! ? 1 : 0, 1);
+}
+
+// Entnahme-Modellrechnung
+{
+  const monthly = Math.pow(1.05, 1 / 12) - 1;
+  // Kapitalerhalt: nach einem Jahr Entnehmen ist das Depot unverändert
+  const preserve = capitalToPreserve(1000, 0.05)!;
+  let value = preserve;
+  for (let m = 0; m < 12; m++) value = value * (1 + monthly) - 1000;
+  check('Entnahme: Kapitalerhalt lässt das Depot unverändert', value, preserve, 1e-6);
+  check('Entnahme: ohne Rendite kein Kapitalerhalt', capitalToPreserve(1000, 0) === null ? 1 : 0, 1);
+  check('Entnahme: ohne Betrag kein Ergebnis', capitalToPreserve(0, 0.05) === null ? 1 : 0, 1);
+  check('Entnahme: Verzehr ohne Rendite = Monate mal Rate', capitalToConsume(1000, 0, 30)!, 360000);
+  // Verzehr: nach genau 30 Jahren ist das Depot leer
+  const consume = capitalToConsume(1000, 0.05, 30)!;
+  value = consume;
+  for (let m = 0; m < 360; m++) value = value * (1 + monthly) - 1000;
+  check('Entnahme: Verzehr ist nach der Dauer aufgebraucht', value, 0, 0.01);
+  check('Entnahme: Verzehr braucht weniger als Kapitalerhalt', consume < preserve ? 1 : 0, 1);
+  check('Entnahme: mehr Rendite braucht weniger Depot', capitalToPreserve(1000, 0.07)! < preserve ? 1 : 0, 1);
+  check('Entnahme: hin und zurück', monthlyFromCapital(capitalToPreserve(1234, 0.06)!, 0.06), 1234, 1e-9);
+  check('Entnahme: leeres Depot trägt nichts', monthlyFromCapital(0, 0.05), 0);
+  check('Entnahme: runden auf volle Tausender', roundCapital(981818.18), 982000);
+  check('Entnahme: runden nie auf null', roundCapital(120), 1000);
 }
 
 // Zielaufteilung

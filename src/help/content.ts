@@ -107,7 +107,8 @@ export const GUIDE: GuideSection[] = [
       'Tippe auf die Karte, um einen Wunschbetrag für dein Depot festzulegen. Danach zeigt ein Balken, wie weit du bist, und die App schätzt, wann du das Ziel erreichst:',
       '• mit einer angenommenen Rendite im Jahr, die du im selben Blatt mit − und + einstellst (Vorgabe 5 %), und',
       '• ganz ohne Kursgewinne, nur durch deine Sparrate.',
-      'Ziel, Rendite, Sparplan-Markierungen und Zielaufteilung bleiben gespeichert, auch wenn du den comdirect-Zugang löschst, und sind in der Sicherungsdatei enthalten. Du kannst das Ziel jederzeit ändern oder entfernen.',
+      'Unter „Entnahme“ rechnest du die andere Richtung: Du gibst eine Wunsch-Entnahme pro Monat ein, und die App zeigt, wie groß das Depot dafür sein müsste – einmal bei Kapitalerhalt (die Entnahme kommt allein aus der Rendite, das Depot bleibt) und einmal beim Verzehr über eine wählbare Zahl von Jahren (danach ist es aufgebraucht). Dazu siehst du, was dein heutiges Depot bei Kapitalerhalt tragen würde. Mit einem Tipp übernimmst du das Kapitalerhalt-Depot als Wunschbetrag, und die Hochrechnung schätzt, wann du es erreichst. Alles ist eine grobe Modellrechnung ohne Steuern und Inflation, keine Empfehlung.',
+      'Ziel, Rendite, Sparplan-Markierungen, Zielaufteilung und Wunsch-Entnahme bleiben gespeichert, auch wenn du den comdirect-Zugang löschst, und sind in der Sicherungsdatei enthalten. Du kannst das Ziel jederzeit ändern oder entfernen.',
     ],
   },
   {

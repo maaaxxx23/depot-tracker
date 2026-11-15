@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { withdrawalPreference } from '../../data/store';
 import { GoalProjection, MAX_RETURN, RETURN_STEP, Savings } from '../../finance/savings';
+import {
+  capitalToConsume,
+  capitalToPreserve,
+  CONSUME_YEARS_DEFAULT,
+  CONSUME_YEARS_MAX,
+  CONSUME_YEARS_MIN,
+  CONSUME_YEARS_STEP,
+  monthlyFromCapital,
+  roundCapital,
+} from '../../finance/withdrawal';
 import type { Instrument } from '../../types';
 import { dayMonth, eur, monthName, monthYear, pct, percent, shortPercent } from '../format';
 import { usePrivacy } from '../privacy';
@@ -23,10 +34,12 @@ interface Props {
   onChangeReturn: (rate: number) => void;
   /** Bisherige Rendite des Depots pro Jahr, nur zum Vergleich */
   historicReturn: number | null;
+  /** Heutiger Depotwert, für die Entnahme-Modellrechnung */
+  currentValue: number;
 }
 
-/** Wunschbetrag festlegen, dazu die erkannten Sparpläne und die Hochrechnung im Detail. */
-export function GoalSheet({ visible, onClose, savings, instruments, goal, projection, onChangeGoal, annualReturn, onChangeReturn, historicReturn }: Props) {
+/** Wunschbetrag festlegen, dazu die erkannten Sparpläne, die Hochrechnung und die Entnahme-Modellrechnung. */
+export function GoalSheet({ visible, onClose, savings, instruments, goal, projection, onChangeGoal, annualReturn, onChangeReturn, historicReturn, currentValue }: Props) {
   const { theme, styles } = useStyles();
   const { hidden } = usePrivacy();
   const [input, setInput] = useState('');
@@ -35,6 +48,39 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
   useEffect(() => {
     if (visible) setInput(goal && !hidden ? String(Math.round(goal)) : '');
   }, [visible, goal, hidden]);
+
+  // Wunsch-Entnahme: gespeicherter Wert plus Eingabefeld (im Privatsphäre-Modus leer, wie oben)
+  const [draw, setDraw] = useState('');
+  const [storedDraw, setStoredDraw] = useState<number | null>(null);
+  const [years, setYears] = useState(CONSUME_YEARS_DEFAULT);
+  useEffect(() => {
+    if (!visible) return;
+    withdrawalPreference
+      .get()
+      .then((w) => {
+        setStoredDraw(w ? w.monthly : null);
+        setYears(w?.years ?? CONSUME_YEARS_DEFAULT);
+        setDraw(w && !hidden ? String(Math.round(w.monthly)) : '');
+      })
+      .catch(() => {});
+  }, [visible, hidden]);
+
+  const changeDraw = (v: string) => {
+    const text = v.replace(/\D/g, '').slice(0, 6);
+    setDraw(text);
+    const n = Number(text);
+    setStoredDraw(n > 0 ? n : null);
+    withdrawalPreference.set(n > 0 ? { monthly: n, years } : null).catch(() => {});
+  };
+  // Im Privatsphäre-Modus rechnet die App mit dem gespeicherten Wert weiter, ohne ihn zu zeigen
+  const drawMonthly = hidden && draw === '' ? storedDraw ?? 0 : Number(draw) || 0;
+  const changeYears = (delta: number) => {
+    const next = Math.min(CONSUME_YEARS_MAX, Math.max(CONSUME_YEARS_MIN, years + delta));
+    setYears(next);
+    if (drawMonthly > 0) withdrawalPreference.set({ monthly: drawMonthly, years: next }).catch(() => {});
+  };
+  const preserve = capitalToPreserve(drawMonthly, annualReturn);
+  const consume = capitalToConsume(drawMonthly, annualReturn, years);
 
   const entered = Number(input);
   const valid = entered >= 100;
@@ -96,7 +142,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
             value={input}
             onChangeText={(v) => setInput(v.replace(/\D/g, '').slice(0, 9))}
             keyboardType="number-pad"
-            placeholder={goal && hidden ? 'Neuen Betrag eingeben' : 'z. B. 100000'}
+            placeholder={goal && hidden ? 'Betrag ausgeblendet' : 'z. B. 100000'}
             placeholderTextColor={theme.muted}
           />
           <Text style={[styles.text, { color: theme.muted }]}>€</Text>
@@ -133,6 +179,74 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Hochrechnung</Text>
           <DetailRows rows={projectionRows} />
         </>
+      )}
+
+      <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Entnahme</Text>
+      <View style={[styles.card, { gap: 10 }]}>
+        <Text style={[styles.text, { color: theme.muted }]}>
+          Eine Modellrechnung für später: Wie groß müsste dein Depot sein, damit du dir jeden Monat einen Wunschbetrag auszahlen kannst?
+        </Text>
+        <View style={[styles.row, { gap: 10 }]}>
+          <TextInput
+            style={{ flex: 1, backgroundColor: theme.background, color: theme.text, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 }}
+            value={draw}
+            onChangeText={changeDraw}
+            keyboardType="number-pad"
+            placeholder={storedDraw && hidden ? 'Betrag ausgeblendet' : 'z. B. 1500'}
+            placeholderTextColor={theme.muted}
+            accessibilityLabel="Wunsch-Entnahme im Monat in Euro"
+          />
+          <Text style={[styles.text, { color: theme.muted }]}>€ im Monat</Text>
+        </View>
+        {drawMonthly > 0 && (
+          <View style={[styles.row, { justifyContent: 'space-between' }]}>
+            <Text style={styles.text}>Verzehr-Dauer</Text>
+            <View style={[styles.row, { gap: 12 }]}>
+              <Pressable
+                onPress={() => changeYears(-CONSUME_YEARS_STEP)}
+                disabled={years <= CONSUME_YEARS_MIN}
+                hitSlop={8}
+                accessibilityLabel="Verzehr-Dauer verringern"
+                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years <= CONSUME_YEARS_MIN ? 0.35 : pressed ? 0.6 : 1 })}
+              >
+                <Ionicons name="remove" size={18} color={theme.text} />
+              </Pressable>
+              <Text style={[styles.text, styles.number, { fontWeight: '600' }]}>{years} Jahre</Text>
+              <Pressable
+                onPress={() => changeYears(CONSUME_YEARS_STEP)}
+                disabled={years >= CONSUME_YEARS_MAX}
+                hitSlop={8}
+                accessibilityLabel="Verzehr-Dauer erhöhen"
+                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years >= CONSUME_YEARS_MAX ? 0.35 : pressed ? 0.6 : 1 })}
+              >
+                <Ionicons name="add" size={18} color={theme.text} />
+              </Pressable>
+            </View>
+          </View>
+        )}
+      </View>
+      {drawMonthly > 0 && (
+        <DetailRows
+          rows={[
+            { label: 'Nötiges Depot bei Kapitalerhalt', hint: 'die Entnahme kommt allein aus der Rendite', value: preserve !== null ? eur(preserve) : '–', private: true },
+            { label: `Bei Verzehr über ${years} Jahre`, hint: 'das Depot ist danach aufgebraucht', value: consume !== null ? eur(consume) : '–', private: true },
+            { label: 'Dein Depot heute trüge', hint: 'pro Monat, bei Kapitalerhalt', value: eur(monthlyFromCapital(currentValue, annualReturn)), private: true },
+          ]}
+        />
+      )}
+      {drawMonthly > 0 && preserve !== null && (
+        <Pressable
+          onPress={() => onChangeGoal(roundCapital(preserve))}
+          style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+        >
+          <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>Depot für Kapitalerhalt als Wunschbetrag übernehmen</Text>
+        </Pressable>
+      )}
+      {drawMonthly > 0 && (
+        <Text style={[styles.small, { paddingHorizontal: 4 }]}>
+          Gerechnet mit deiner angenommenen Rendite, ohne Steuern und Inflation: Auf Gewinne gehen bei der Entnahme meist rund 26 % Steuern ab, und gerade schwache erste
+          Jahre können den Verzehr spürbar verkürzen. Ob und wie viel du entnimmst, entscheidest du.
+        </Text>
       )}
 
       <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Sparpläne</Text>

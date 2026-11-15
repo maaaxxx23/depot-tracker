@@ -3,6 +3,7 @@
 // aber nie Zugangsdaten: die bleiben im Schlüsselbund.
 
 import { mergeTransactions, RawPortfolio, Snapshot } from '../comdirect/portfolio';
+import type { WithdrawalWish } from '../finance/withdrawal';
 import type { IndustryCache, IndustryEntry } from '../market/industries';
 import type { FundComposition } from './holdingsImport';
 
@@ -25,9 +26,11 @@ export interface BackupSettings {
   savingsMarks: string[];
   /** Zielaufteilung: Wunschanteil je ISIN (0,7 = 70 %); leer = keine */
   targetShares: Record<string, number>;
+  /** Wunsch-Entnahme für die Modellrechnung */
+  withdrawal: WithdrawalWish | null;
 }
 
-export const NO_SETTINGS: BackupSettings = { goal: null, assumedReturn: null, savingsMarks: [], targetShares: {} };
+export const NO_SETTINGS: BackupSettings = { goal: null, assumedReturn: null, savingsMarks: [], targetShares: {}, withdrawal: null };
 
 /** Importierte ETF-Bestandslisten und der Branchen-Zwischenspeicher: kommen mit in die Sicherung, damit sie einen Gerätewechsel überleben. */
 export interface BackupLists {
@@ -63,13 +66,16 @@ export function parseBackupSettings(text: string): BackupSettings {
     return NO_SETTINGS;
   }
   if (!settings || typeof settings !== 'object') return NO_SETTINGS;
-  const { goal, assumedReturn, savingsMarks, targetShares } = settings;
+  const { goal, assumedReturn, savingsMarks, targetShares, withdrawal } = settings;
   const shares = targetShares && typeof targetShares === 'object' ? Object.entries(targetShares).filter(([, v]) => typeof v === 'number' && v >= 0 && v <= 1) : [];
+  const wish = withdrawal && typeof withdrawal === 'object' ? (withdrawal as WithdrawalWish) : null;
+  const wishOk = wish !== null && typeof wish.monthly === 'number' && Number.isFinite(wish.monthly) && wish.monthly > 0 && typeof wish.years === 'number' && wish.years >= 1 && wish.years <= 100;
   return {
     goal: typeof goal === 'number' && Number.isFinite(goal) && goal > 0 ? goal : null,
     assumedReturn: typeof assumedReturn === 'number' && assumedReturn >= 0 && assumedReturn <= 1 ? assumedReturn : null,
     savingsMarks: Array.isArray(savingsMarks) ? savingsMarks.filter((m): m is string => typeof m === 'string') : [],
     targetShares: Object.fromEntries(shares),
+    withdrawal: wishOk ? { monthly: wish.monthly, years: Math.round(wish.years) } : null,
   };
 }
 
@@ -84,6 +90,7 @@ export function mergeSettings(current: BackupSettings, backup: BackupSettings): 
     savingsMarks: [...new Set([...current.savingsMarks, ...backup.savingsMarks])],
     // Eine Aufteilung gehört zusammen (100 %): entweder die vom iPhone oder die aus der Sicherung, nie gemischt
     targetShares: Object.keys(current.targetShares).length ? current.targetShares : backup.targetShares,
+    withdrawal: current.withdrawal ?? backup.withdrawal,
   };
 }
 
