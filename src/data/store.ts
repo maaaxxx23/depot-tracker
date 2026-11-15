@@ -32,6 +32,7 @@ const PREFERENCES = {
   withdrawal: 'withdrawal-v1',
   appLock: 'app-lock-v1',
   autoLock: 'auto-lock-minutes-v1',
+  appearance: 'appearance-v1',
 };
 
 const MAX_SNAPSHOTS = 2000;
@@ -149,6 +150,14 @@ export const withdrawalPreference = {
 export const appLockPreference = {
   get: () => readJson<boolean>(PREFERENCES.appLock, false),
   set: (on: boolean) => AsyncStorage.setItem(PREFERENCES.appLock, JSON.stringify(on)),
+};
+
+/** Darstellung: dem System folgen oder fest hell bzw. dunkel. */
+export type AppearanceMode = 'system' | 'light' | 'dark';
+
+export const appearancePreference = {
+  get: () => readJson<AppearanceMode>(PREFERENCES.appearance, 'system'),
+  set: (mode: AppearanceMode) => AsyncStorage.setItem(PREFERENCES.appearance, JSON.stringify(mode)),
 };
 
 /** Automatische Sperre, wenn die App so viele Minuten nicht berührt wird; 0 = aus. Gerätespezifisch wie die App-Sperre. */

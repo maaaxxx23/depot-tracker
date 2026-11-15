@@ -4,7 +4,8 @@ import { Alert, InputAccessoryView, Keyboard, Platform, Pressable, Switch, Text,
 import { clearCredentials, saveCredentials, Setup } from '../../comdirect/credentials';
 import { applyCsv, exportBackup, importBackup, pickDepotCsv } from '../../data/backup';
 import type { StoredPortfolio } from '../../data/backupFormat';
-import { appLockPreference, autoLockPreference, clearStored } from '../../data/store';
+import { AppearanceMode, appLockPreference, autoLockPreference, clearStored } from '../../data/store';
+import { useAppearance } from '../appearance';
 import { eur, monthYear } from '../format';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
@@ -88,6 +89,14 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
     setLock(on);
     appLockPreference.set(on).catch(() => {});
   };
+
+  // Darstellung: dem System folgen oder fest hell bzw. dunkel
+  const { mode, setMode } = useAppearance();
+  const APPEARANCE_CHOICES: { value: AppearanceMode; label: string }[] = [
+    { value: 'system', label: 'Automatisch' },
+    { value: 'light', label: 'Hell' },
+    { value: 'dark', label: 'Dunkel' },
+  ];
 
   // Auto-Sperre: Minuten ohne Berührung, nach denen sich die offene App selbst sperrt (0 = aus)
   const [autoLock, setAutoLock] = useState(0);
@@ -331,6 +340,32 @@ export function ConnectSheet({ visible, setup, onClose, onSaved, onDisconnected,
             </View>
           </>
         )}
+      </View>
+
+      <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Darstellung</Text>
+      <View style={[styles.card, { gap: 10 }]}>
+        <View style={[styles.row, { gap: 8 }]}>
+          {APPEARANCE_CHOICES.map((c) => (
+            <Pressable
+              key={c.value}
+              onPress={() => setMode(c.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: mode === c.value }}
+              accessibilityLabel={`Darstellung ${c.label}`}
+              style={({ pressed }) => ({
+                flex: 1,
+                paddingVertical: 8,
+                borderRadius: 10,
+                alignItems: 'center',
+                backgroundColor: mode === c.value ? theme.accent : theme.chip,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text style={{ color: mode === c.value ? '#fff' : theme.text, fontSize: 14, fontWeight: '600' }}>{c.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.small}>„Automatisch“ folgt der iOS-Einstellung.</Text>
       </View>
 
       {/* Sicherung: gesammelte Umsätze überstehen so auch ein Löschen der App */}

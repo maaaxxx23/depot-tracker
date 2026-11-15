@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { useEffectiveScheme } from './appearance';
 
 const light = {
   background: '#F2F2F7',
@@ -43,5 +43,5 @@ const dark: typeof light = {
 export type Theme = typeof light;
 
 export function useTheme(): Theme {
-  return useColorScheme() === 'dark' ? dark : light;
+  return useEffectiveScheme() === 'dark' ? dark : light;
 }
