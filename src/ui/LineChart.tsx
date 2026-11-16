@@ -9,6 +9,8 @@ export interface ChartSeries {
   values: number[];
   color: string;
   dashed?: boolean;
+  /** Eigene Strichstärke, z. B. dünne Vergleichslinien; sonst 1,5 (gestrichelt) bzw. 2,2 */
+  width?: number;
 }
 
 interface Props {
@@ -202,7 +204,7 @@ export function LineChart({
               key={k}
               d={s.values.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}
               stroke={s.color}
-              strokeWidth={s.dashed ? 1.5 : 2.2}
+              strokeWidth={s.width ?? (s.dashed ? 1.5 : 2.2)}
               strokeDasharray={s.dashed ? '4 4' : undefined}
               strokeLinejoin="round"
               fill="none"

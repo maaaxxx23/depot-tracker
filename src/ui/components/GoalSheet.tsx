@@ -201,8 +201,9 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
     return {
       dates,
       series: [
-        ...extra.map((e) => ({ values: line(e.rate), color: e.color, dashed: true })),
-        // Die Annahme-Linie zuletzt, damit sie obenauf liegt
+        // Durchgezogen statt gestrichelt: Strichelung rendert auf langen Kurven lückenhaft
+        ...extra.map((e) => ({ values: line(e.rate), color: e.color, width: 1.4 })),
+        // Die Annahme-Linie zuletzt und kräftiger, damit sie obenauf liegt
         { values: line(annualReturn), color: theme.accent },
       ],
     };
