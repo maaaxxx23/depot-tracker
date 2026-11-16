@@ -72,10 +72,12 @@ Beide müssen mit 0 FAIL durchlaufen; sie laufen vor jedem TestFlight-Build.
 | `src/ui/` | Theme (Gold-Akzent, hell/dunkel), AppLock (Face-ID-Sperre + Vorhang-Blickschutz), Privatsphäre-Modus (Weichzeichner), Haptik, Blätter und Karten |
 | `src/screens/DashboardScreen.tsx` | Die eine Seite der App; verdrahtet alles, inkl. Spotlight-Tour |
 | `scripts/` | Testskripte und Starthelfer |
+| `DESIGN.md` | Gestaltungsrichtlinien: Farben, Bewegung, Haptik, Text-Stil und die Muster für neue Funktionen |
 | `TESTFLIGHT.md` | Build- und Veröffentlichungsprozess (EAS Build → App Store Connect) |
 
 Konventionen: eine Datei pro Thema, Kommentare auf Deutsch erklären das Warum,
-Rechenlogik bleibt frei von React/UI und wird in den Skripten getestet.
+Rechenlogik bleibt frei von React/UI und wird in den Skripten getestet. Für alles
+Sichtbare gilt `DESIGN.md`.
 
 ## Build & TestFlight
 
