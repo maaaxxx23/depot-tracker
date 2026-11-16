@@ -217,17 +217,19 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
     ? [
         { label: 'Erreicht', value: percent(projection.progress) },
         { label: 'Es fehlen noch', value: eur(projection.remaining), private: true },
+        // Die Zeilen tragen die Farben ihrer Linien im Diagramm darüber
         {
           label: `Mit ${shortPercent(annualReturn)} Rendite im Jahr`,
+          labelColor: theme.accent,
           hint: 'deine Annahme, kein Versprechen',
           value: when(projection.withReturn),
         },
         // Echte Vergleichswerte statt erfundener Szenarien: so lief es bisher bzw. langfristig
         ...(projection.remaining > 0 && historicReturn !== null
-          ? [{ label: `Mit deiner bisherigen Rendite (${shortPercent(historicReturn)})`, hint: 'Depot pro Jahr seit Beginn', value: when(scenarioMonth(historicReturn)) }]
+          ? [{ label: `Mit deiner bisherigen Rendite (${shortPercent(historicReturn)})`, labelColor: theme.invested, hint: 'Depot pro Jahr seit Beginn', value: when(scenarioMonth(historicReturn)) }]
           : []),
         ...(projection.remaining > 0 && benchmarkName && benchmarkAverage !== null
-          ? [{ label: `Mit dem ${benchmarkName}-Schnitt (${shortPercent(benchmarkAverage)})`, hint: 'Durchschnitt der geladenen Kurshistorie', value: when(scenarioMonth(benchmarkAverage)) }]
+          ? [{ label: `Mit dem ${benchmarkName}-Schnitt (${shortPercent(benchmarkAverage)})`, labelColor: theme.benchmark, hint: 'Durchschnitt der geladenen Kurshistorie', value: when(scenarioMonth(benchmarkAverage)) }]
           : []),
         {
           label: 'Ohne Kursgewinne',
