@@ -4,7 +4,8 @@ import { analyzePeriod, analyzePositions, buildSeries, priceAt, toDate } from '.
 import { xirr } from '../src/finance/xirr';
 import { analyzeYears, realizedSales } from '../src/finance/years';
 import { estimateVorabpauschale, pauschaleYear } from '../src/finance/vorabpauschale';
-import { analyzeAllocation, currentAsTargets } from '../src/finance/allocation';
+import { analyzeAllocation, catchUpAmount, currentAsTargets, splitPurchase } from '../src/finance/allocation';
+import { reviewLastMonth } from '../src/finance/monthReview';
 import { detectSavings, monthsToGoal, projectGoal } from '../src/finance/savings';
 import { capitalToConsume, capitalToPreserve, monthlyFromCapital, roundCapital } from '../src/finance/withdrawal';
 import { buildInsights, concentration, drawdownOfCurrentHoldings, nextMilestone, savingsStreak } from '../src/finance/insights';
@@ -258,6 +259,41 @@ check(
   check('Aufteilung: Vorschlag ergibt 100 %', Object.values(demoTargets).reduce((s, n) => s + n, 0), 100);
   const thirds = analyzePositions(makeData([buyTx('2025-02-01', 'ETF', 1), buyTx('2025-02-01', 'AKTIE', 2)]));
   check('Aufteilung: Vorschlag bei Drittel ergibt 100 %', Object.values(currentAsTargets(thirds)).reduce((s, n) => s + n, 0), 100);
+}
+
+// Rechnerischer Ausgleich: Zukauf-Verteilung zur Zielaufteilung
+{
+  // 7000 € ETF / 3000 € Aktie
+  const pos = analyzePositions(makeData([buyTx('2025-02-01', 'ETF', 70), buyTx('2025-02-01', 'AKTIE', 30)]));
+  const all = splitPurchase(pos, { ETF: 0.5, AKTIE: 0.5 }, 1000);
+  check('Ausgleich: alles in die Position unter Ziel', all.find((s) => s.isin === 'AKTIE')!.amount, 1000);
+  check('Ausgleich: nichts in die Position über Ziel', all.length, 1);
+  const balanced = splitPurchase(pos, { ETF: 0.7, AKTIE: 0.3 }, 1000);
+  check('Ausgleich: im Ziel wird nach Anteilen verteilt (ETF)', balanced.find((s) => s.isin === 'ETF')!.amount, 700);
+  check('Ausgleich: im Ziel wird nach Anteilen verteilt (Aktie)', balanced.find((s) => s.isin === 'AKTIE')!.amount, 300);
+  const equal = analyzePositions(makeData([buyTx('2025-02-01', 'ETF', 1), buyTx('2025-02-01', 'AKTIE', 1)]));
+  check('Ausgleich: Rundung erhält die Summe', splitPurchase(equal, { ETF: 0.5, AKTIE: 0.5 }, 101).reduce((s, r) => s + r.amount, 0), 101);
+  check('Ausgleich: Einmalbetrag bis zum Ziel', catchUpAmount(pos, { ETF: 0.5, AKTIE: 0.5 })!, 4000, 1e-6);
+  check('Ausgleich: im Ziel ist nichts nötig', catchUpAmount(pos, { ETF: 0.7, AKTIE: 0.3 })!, 0, 1e-6);
+  check('Ausgleich: 0 %-Ziel mit Bestand geht nicht ohne Verkauf', catchUpAmount(pos, { ETF: 1, AKTIE: 0 }) === null ? 1 : 0, 1);
+  // Der Einmalbetrag, so verteilt, trifft das Ziel exakt (hier: alles in die Aktie → 7000/7000)
+  check('Ausgleich: Einmalbetrag landet komplett unter Ziel', splitPurchase(pos, { ETF: 0.5, AKTIE: 0.5 }, 4000).find((s) => s.isin === 'AKTIE')!.amount, 4000);
+}
+
+// Monats-Rückblick
+{
+  const data: PortfolioData = {
+    ...makeData([buyTx('2026-09-15', 'ETF', 10), { date: '2026-10-10', isin: 'ETF', type: 'buy', quantity: 2, amount: 220, fees: 1.5 }], '2026-11-03'),
+    prices: { ETF: [{ date: '2026-08-31', price: 100 }, { date: '2026-09-30', price: 100 }, { date: '2026-10-31', price: 110 }], AKTIE: [{ date: '2026-08-31', price: 100 }] },
+  };
+  const review = reviewLastMonth(data)!;
+  check('Rückblick: Startwert Ende September', review.startValue, 1000);
+  check('Rückblick: Endwert Ende Oktober', review.endValue, 1320);
+  check('Rückblick: eingezahlt inkl. Gebühren', review.invested, 221.5);
+  check('Rückblick: Wertentwicklung = Rest', review.gain, 1320 - 1000 - 221.5);
+  check('Rückblick: leeres Depot hat keinen Rückblick', reviewLastMonth(makeData([buyTx('2026-11-02', 'ETF', 1)], '2026-11-04')) === null ? 1 : 0, 1);
+  check('Rückblick: Hinweis zu Monatsbeginn', buildInsights(data, analyzePositions(data)).filter((i) => i.id === 'month-review').length, 1);
+  check('Rückblick: später im Monat kein Hinweis', buildInsights({ ...data, asOf: '2026-11-12' }, analyzePositions(data)).filter((i) => i.id === 'month-review').length, 0);
 }
 
 // Vorabpauschale-Vorschau

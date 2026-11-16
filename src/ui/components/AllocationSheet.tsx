@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
-import { AllocationRow, currentAsTargets, DEVIATION_LIMIT, TargetShares } from '../../finance/allocation';
+import { AllocationRow, catchUpAmount, currentAsTargets, DEVIATION_LIMIT, splitPurchase, TargetShares } from '../../finance/allocation';
 import type { PositionResult } from '../../finance/performance';
-import { percent, points, shortPercent } from '../format';
+import { eur, percent, points, shortPercent } from '../format';
 import { tapFeedback } from '../haptics';
+import { PrivateText } from '../privacy';
+import { RichText } from '../RichText';
 import { Sheet } from '../Sheet';
 import { useStyles } from '../styles';
 import { positionColor } from './PositionList';
@@ -14,15 +16,26 @@ interface Props {
   positions: PositionResult[];
   targets: TargetShares;
   allocation: Map<string, AllocationRow>;
+  /** Erkannte Sparrate pro Monat; 0 = keine */
+  monthlyRate: number;
   /** Leeres Objekt entfernt die Zielaufteilung */
   onChange: (targets: TargetShares) => void;
 }
 
 /** Wunschanteil je Position in ganzen Prozent festlegen; zusammen müssen es 100 % sein. */
-export function AllocationSheet({ visible, onClose, positions, targets, allocation, onChange }: Props) {
+export function AllocationSheet({ visible, onClose, positions, targets, allocation, monthlyRate, onChange }: Props) {
   const { theme, styles } = useStyles();
   const [inputs, setInputs] = useState<Record<string, string>>({});
   const active = Object.keys(targets).length > 0;
+
+  // Rechnerischer Ausgleich auf Basis der GESPEICHERTEN Zielaufteilung: wie die nächste
+  // Sparrate (oder ein Einmalbetrag) verteilt sein müsste, um dem Ziel am nächsten zu kommen.
+  // Reine Rechnung mit den eigenen Vorgaben, keine Empfehlung.
+  const maxDeviation = active ? Math.max(0, ...[...allocation.values()].map((r) => Math.abs(r.deviation))) : 0;
+  const catchUp = active && maxDeviation >= 0.01 ? catchUpAmount(positions, targets) : null;
+  const hasRate = monthlyRate >= 1;
+  const budget = hasRate ? Math.round(monthlyRate) : catchUp !== null && catchUp >= 1 ? Math.round(catchUp) : 0;
+  const split = active && maxDeviation >= 0.01 && budget > 0 ? splitPurchase(positions, targets, budget) : [];
 
   useEffect(() => {
     if (!visible) return;
@@ -104,6 +117,40 @@ export function AllocationSheet({ visible, onClose, positions, targets, allocati
         >
           <Text style={{ color: theme.negative, fontSize: 15, fontWeight: '600' }}>Zielaufteilung entfernen</Text>
         </Pressable>
+      )}
+
+      {split.length > 0 && (
+        <View style={[styles.card, { gap: 10 }]}>
+          <RichText
+            parts={
+              hasRate
+                ? ['Rechnerisch: So verteilt bringt dich deine Sparrate von rund', { amount: budget }, 'im Monat dem Ziel am nächsten – ohne Verkäufe:']
+                : ['Rechnerisch: Mit einem Zukauf von insgesamt', { amount: budget }, ', so verteilt, lägst du wieder genau im Ziel – ohne Verkäufe:']
+            }
+            style={[styles.small, { color: theme.muted }]}
+          />
+          {split.map((entry) => {
+            const index = positions.findIndex((p) => p.instrument.isin === entry.isin);
+            if (index < 0) return null;
+            return (
+              <View key={entry.isin} style={[styles.row, { gap: 10, justifyContent: 'space-between' }]}>
+                <View style={[styles.row, { gap: 10, flexShrink: 1 }]}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: positionColor(theme, index) }} />
+                  <Text style={[styles.text, { flexShrink: 1 }]} numberOfLines={1}>
+                    {positions[index].instrument.shortName}
+                  </Text>
+                </View>
+                <PrivateText style={[styles.text, styles.number, { fontWeight: '600' }]}>{eur(entry.amount)}</PrivateText>
+              </View>
+            );
+          })}
+          {hasRate && catchUp !== null && catchUp >= 1 && (
+            <RichText
+              parts={['Mit einem einmaligen Zukauf von insgesamt', { amount: Math.round(catchUp) }, 'wärst du sofort wieder genau im Ziel.']}
+              style={[styles.small, { color: theme.muted }]}
+            />
+          )}
+        </View>
       )}
 
       <Text style={[styles.small, { paddingHorizontal: 4 }]}>

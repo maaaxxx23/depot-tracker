@@ -43,4 +43,7 @@ const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'A
 /** „März 2029“ aus „2029-03“ (oder einem ganzen ISO-Datum). */
 export const monthName = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
+/** Nur der Monatsname: „März“. */
+export const monthWord = (iso: string) => MONTHS[Number(iso.slice(5, 7)) - 1];
+
 export const monthYear = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(2, 4)}`;

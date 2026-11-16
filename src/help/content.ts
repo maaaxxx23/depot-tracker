@@ -60,7 +60,7 @@ export const GUIDE: GuideSection[] = [
       '• Beim Öffnen nach mindestens einer Stunde Pause zeigt ein Banner oben kurz, wie sich dein Depot seit deinem letzten Besuch bewegt hat. Langes Drücken auf den Depotwert zeigt es jederzeit.',
       '• Darunter: Gewinn in Euro und die Rendite pro Jahr (p.a.) im gewählten Zeitraum. Sie berücksichtigt, wann du wie viel eingezahlt hast.',
       '• „seit Kauf“: genau die Zahl, die auch die comdirect-App zeigt (heutiger Wert minus Einstandswert).',
-      '• Hinweise: z. B. ein Rücksetzer gegenüber dem Höchststand, Gebühren, Meilensteine oder ein zu großes Gewicht einzelner Aktien.',
+      '• Hinweise: z. B. zu Monatsbeginn ein kurzer Rückblick auf den Vormonat (Veränderung, eingezahlt, Wertentwicklung), ein Rücksetzer gegenüber dem Höchststand, Gebühren, Meilensteine oder ein zu großes Gewicht einzelner Aktien.',
       '• Sparen & Ziel: deine Sparrate und der Fortschritt zu deinem Wunschbetrag. Antippen zeigt Details, auch was du dieses Jahr eingezahlt hast.',
       '• Positionen: Aufteilung als Balken und jede Position mit Wert und Rendite. Antippen öffnet die Details. Über „Zielaufteilung“ legst du Wunschanteile fest.',
       '• Was steckt drin: die größten Länder und Branchen über alle deine ETFs. Antippen öffnet die Details und den Import der Bestandslisten.',
@@ -94,7 +94,8 @@ export const GUIDE: GuideSection[] = [
     body: [
       'Tippe in der Karte „Positionen“ oben rechts auf „Zielaufteilung“ und trage für jede Position den gewünschten Anteil in Prozent ein. Zusammen müssen es genau 100 % sein. „Heutige Aufteilung eintragen“ füllt die Felder als Ausgangspunkt.',
       'Danach steht bei jeder Position „Ziel … %“. Weicht eine Position um mehr als 5 Prozentpunkte ab, wird das orange hervorgehoben und es erscheint ein Hinweis auf der Startseite.',
-      'Die App beobachtet nur. Ob und wie du eine Abweichung ausgleichst, entscheidest du. Die Zielaufteilung ist in der Sicherungsdatei enthalten.',
+      'Weicht das Depot ab, rechnet das Blatt zusätzlich aus, wie deine Sparrate (oder ein einmaliger Zukauf) verteilt sein müsste, um dem Ziel ohne Verkäufe wieder am nächsten zu kommen.',
+      'Die App beobachtet und rechnet nur mit deinen eigenen Vorgaben – ob und wie du etwas änderst, entscheidest du. Die Zielaufteilung ist in der Sicherungsdatei enthalten.',
     ],
   },
   {

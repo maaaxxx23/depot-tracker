@@ -562,6 +562,7 @@ export function DashboardScreen() {
         positions={positions}
         targets={targets}
         allocation={allocation}
+        monthlyRate={savings.monthlyRate}
         onChange={(next) => {
           setTargets(next);
           targetSharesPreference.set(next).catch(() => {});
