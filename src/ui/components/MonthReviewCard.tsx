@@ -5,7 +5,7 @@ import type { MonthReview } from '../../finance/monthReview';
 import { eur, monthWord, signedEur } from '../format';
 import { tapFeedback } from '../haptics';
 import { PrivateText } from '../privacy';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 
 interface Props {
   review: MonthReview;
@@ -82,16 +82,16 @@ export function MonthReviewCard({ review, collapsed, onCollapse, onExpand, onDis
           <Pressable
             onPress={choose(onDismiss)}
             accessibilityRole="button"
-            style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
+            style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
           >
-            <Text style={{ color: theme.onAccent, fontSize: 15, fontWeight: '600' }}>Bis zum nächsten Monat ausblenden</Text>
+            <Text style={{ color: theme.onAccent, fontSize: font.body, fontWeight: '600' }}>Bis zum nächsten Monat ausblenden</Text>
           </Pressable>
           <Pressable
             onPress={choose(onCollapse)}
             accessibilityRole="button"
-            style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+            style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: radius.button, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
           >
-            <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>Nur einklappen</Text>
+            <Text style={{ color: theme.text, fontSize: font.body, fontWeight: '600' }}>Nur einklappen</Text>
           </Pressable>
         </View>
       )}

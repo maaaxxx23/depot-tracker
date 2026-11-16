@@ -4,7 +4,7 @@ import { eur, monthYear, pct, signedEur } from '../format';
 import { PrivateText } from '../privacy';
 import { RichText } from '../RichText';
 import { Sheet } from '../Sheet';
-import { signColor, useStyles } from '../styles';
+import { font, signColor, useStyles } from '../styles';
 import { DetailRows } from './DetailRows';
 
 interface Props {
@@ -30,7 +30,7 @@ export function BenchmarkSheet({ visible, onClose, result, benchmark, name, peri
         ].map((c) => (
           <View key={c.label} style={[styles.card, { flex: 1, gap: 4 }]}>
             <Text style={[styles.label, { color: c.color, fontWeight: '600' }]}>{c.label}</Text>
-            <Text style={[styles.number, { fontSize: 24, fontWeight: '700', color: theme.text }]}>{pct(c.irr)}</Text>
+            <Text style={[styles.number, { fontSize: font.stat, fontWeight: '700', color: theme.text }]}>{pct(c.irr)}</Text>
             <View style={[styles.row, { gap: 4 }]}>
               <Text style={styles.small}>p.a. ·</Text>
               <PrivateText style={styles.small}>{eur(c.value)}</PrivateText>

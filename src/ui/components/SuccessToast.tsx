@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useShield } from '../AppLock';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 
 interface Props {
   message: string;
@@ -13,7 +13,7 @@ interface Props {
 
 /** Kurze Erfolgs-Einblendung oben: schwebt herein, bleibt zwei Sekunden, löst sich auf. */
 export function SuccessToast({ message, topInset, onDone }: Props) {
-  const { theme } = useStyles();
+  const { theme, styles } = useStyles();
   const { locked, covered, veiled } = useShield();
   // Solange Sperrbildschirm oder Vorhang davorliegen (auch noch beim Aufziehen), wartet die
   // Einblendung – sonst liefe sie unsichtbar ab, etwa während der Code-Eingabe nach einem App-Wechsel
@@ -50,24 +50,23 @@ export function SuccessToast({ message, topInset, onDone }: Props) {
       }}
     >
       <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 6,
-          backgroundColor: theme.card,
-          borderRadius: 20,
-          paddingVertical: 8,
-          paddingHorizontal: 14,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: theme.border,
-          shadowColor: '#000',
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 2 },
-        }}
+        style={[
+          styles.floating,
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            backgroundColor: theme.card,
+            borderRadius: radius.pill,
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: theme.border,
+          },
+        ]}
       >
         <Ionicons name="checkmark-circle" size={18} color={theme.positive} />
-        <Text style={{ color: theme.text, fontSize: 14, fontWeight: '600' }}>{message}</Text>
+        <Text style={{ color: theme.text, fontSize: font.chip, fontWeight: '600' }}>{message}</Text>
       </View>
     </Animated.View>
   );

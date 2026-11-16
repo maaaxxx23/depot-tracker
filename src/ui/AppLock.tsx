@@ -3,7 +3,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Easing, Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { appLockPreference, autoLockPreference } from '../data/store';
-import { useStyles } from './styles';
+import { font, radius, useStyles } from './styles';
 
 /**
  * Sperr- und Vorhang-Zustand für Stellen außerhalb des normalen Baums: Die Detailblätter
@@ -42,16 +42,16 @@ export function ShieldOverlay() {
         gap: 14,
       }}
     >
-      <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
+      <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: radius.icon }} />
       {locked && !covered && (
         <>
-          <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
+          <Text style={{ fontSize: font.title, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
           <Pressable
             onPress={unlock}
             accessibilityRole="button"
-            style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
+            style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
           >
-            <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
+            <Text style={{ color: theme.onAccent, fontSize: font.button, fontWeight: '600' }}>Entsperren</Text>
           </Pressable>
         </>
       )}
@@ -235,16 +235,16 @@ export function AppLock({ children }: { children: React.ReactNode }) {
                 opacity: coverProgress.interpolate({ inputRange: [0.75, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
               }}
             >
-              <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: 22 }} />
+              <Image source={require('../../assets/icon.png')} style={{ width: 96, height: 96, borderRadius: radius.icon }} />
               {showLockUi && (
                 <>
-                  <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
+                  <Text style={{ fontSize: font.title, fontWeight: '600', color: theme.text }}>Depot Tracker ist gesperrt</Text>
                   <Pressable
                     onPress={unlock}
                     accessibilityRole="button"
-                    style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
+                    style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 12, paddingHorizontal: 28, opacity: pressed ? 0.7 : 1 })}
                   >
-                    <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Entsperren</Text>
+                    <Text style={{ color: theme.onAccent, fontSize: font.button, fontWeight: '600' }}>Entsperren</Text>
                   </Pressable>
                 </>
               )}

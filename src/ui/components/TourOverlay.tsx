@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { tapFeedback } from '../haptics';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 
 export interface TourRect {
   x: number;
@@ -129,9 +129,9 @@ export function TourOverlay({ rect, title, text, step, total, onNext, onSkip }: 
             <Pressable
               onPress={next}
               accessibilityRole="button"
-              style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 18, opacity: pressed ? 0.7 : 1 })}
+              style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.control, paddingVertical: 8, paddingHorizontal: 18, opacity: pressed ? 0.7 : 1 })}
             >
-              <Text style={{ color: theme.onAccent, fontSize: 15, fontWeight: '600' }}>{step + 1 === total ? 'Fertig' : 'Weiter'}</Text>
+              <Text style={{ color: theme.onAccent, fontSize: font.body, fontWeight: '600' }}>{step + 1 === total ? 'Fertig' : 'Weiter'}</Text>
             </Pressable>
           </View>
         </View>

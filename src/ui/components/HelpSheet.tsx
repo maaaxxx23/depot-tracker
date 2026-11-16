@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { LayoutAnimation, Pressable, Text, View } from 'react-native';
 import { FAQ, GUIDE } from '../../help/content';
 import { Sheet } from '../Sheet';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 
 interface Props {
   visible: boolean;
@@ -28,7 +28,7 @@ export function HelpSheet({ visible, onClose, onReplayWelcome }: Props) {
     setOpen((current) => (current === id ? null : id));
   };
 
-  const bodyText = { fontSize: 15, lineHeight: 22, color: theme.muted } as const;
+  const bodyText = { fontSize: font.body, lineHeight: 22, color: theme.muted } as const;
 
   const paragraph = (text: string, key: number) => {
     const bullet = text.startsWith('• ');
@@ -38,7 +38,7 @@ export function HelpSheet({ visible, onClose, onReplayWelcome }: Props) {
         <View key={key} style={[styles.row, { alignItems: 'flex-start', gap: 10 }]}>
           {step ? (
             <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: theme.helpSoft, alignItems: 'center', justifyContent: 'center', marginTop: 0 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: theme.help }}>{step[1]}</Text>
+              <Text style={{ fontSize: font.small, fontWeight: '700', color: theme.help }}>{step[1]}</Text>
             </View>
           ) : (
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.help, marginTop: 8, marginHorizontal: 2 }} />
@@ -58,19 +58,19 @@ export function HelpSheet({ visible, onClose, onReplayWelcome }: Props) {
     <Sheet visible={visible} onClose={onClose} title="Anleitung & FAQ">
       {onReplayWelcome && (
         <Pressable onPress={onReplayWelcome} accessibilityRole="button" hitSlop={4} style={({ pressed }) => ({ alignSelf: 'flex-start', paddingHorizontal: 4, opacity: pressed ? 0.6 : 1 })}>
-          <Text style={{ fontSize: 15, color: theme.accent, fontWeight: '600' }}>Willkommens-Tour erneut ansehen</Text>
+          <Text style={{ fontSize: font.body, color: theme.accent, fontWeight: '600' }}>Willkommens-Tour erneut ansehen</Text>
         </Pressable>
       )}
       {/* Umschalter wie beim Chart */}
-      <View style={{ flexDirection: 'row', backgroundColor: theme.chip, borderRadius: 10, padding: 3 }}>
+      <View style={{ flexDirection: 'row', backgroundColor: theme.chip, borderRadius: radius.control, padding: 3 }}>
         {(['guide', 'faq'] as const).map((t) => (
           <Pressable
             key={t}
             onPress={() => setTab(t)}
             accessibilityState={{ selected: tab === t }}
-            style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: tab === t ? theme.card : 'transparent' }}
+            style={{ flex: 1, paddingVertical: 8, borderRadius: radius.small, alignItems: 'center', backgroundColor: tab === t ? theme.card : 'transparent' }}
           >
-            <Text style={{ fontSize: 15, color: tab === t ? theme.text : theme.muted, fontWeight: tab === t ? '700' : '500' }}>
+            <Text style={{ fontSize: font.body, color: tab === t ? theme.text : theme.muted, fontWeight: tab === t ? '700' : '500' }}>
               {t === 'guide' ? 'Anleitung' : 'Häufige Fragen'}
             </Text>
           </Pressable>
@@ -86,10 +86,10 @@ export function HelpSheet({ visible, onClose, onReplayWelcome }: Props) {
                   <Ionicons name={section.icon} size={21} color={theme.card} />
                 </View>
                 <View style={{ flex: 1, gap: 1 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: theme.help }}>
+                  <Text style={{ fontSize: font.small, fontWeight: '700', letterSpacing: 0.8, color: theme.help }}>
                     {`KAPITEL ${String(index + 1).padStart(2, '0')}`}
                   </Text>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>{section.title}</Text>
+                  <Text style={{ fontSize: font.heading, fontWeight: '700', color: theme.text }}>{section.title}</Text>
                 </View>
               </View>
               <View style={{ gap: 10, padding: 16, paddingTop: 14 }}>{section.body.map(paragraph)}</View>
@@ -100,7 +100,7 @@ export function HelpSheet({ visible, onClose, onReplayWelcome }: Props) {
               {/* Gruppenüberschrift: goldgelber Balken und Titel */}
               <View style={[styles.row, { gap: 8, marginLeft: 2 }]}>
                 <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: theme.help }} />
-                <Text style={{ fontSize: 17, fontWeight: '700', color: theme.text }}>{group.title}</Text>
+                <Text style={{ fontSize: font.title, fontWeight: '700', color: theme.text }}>{group.title}</Text>
                 <Text style={[styles.small, { marginLeft: 'auto', marginRight: 4 }]}>{group.items.length} Fragen</Text>
               </View>
               <View style={[styles.card, { gap: 0, paddingVertical: 4 }]}>
@@ -119,16 +119,16 @@ export function HelpSheet({ visible, onClose, onReplayWelcome }: Props) {
                           style={{
                             width: 24,
                             height: 24,
-                            borderRadius: 12,
+                            borderRadius: radius.button,
                             marginTop: -1,
                             backgroundColor: expanded ? theme.help : theme.helpSoft,
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
                         >
-                          <Text style={{ fontSize: 13, fontWeight: '800', color: expanded ? theme.card : theme.help }}>?</Text>
+                          <Text style={{ fontSize: font.label, fontWeight: '800', color: expanded ? theme.card : theme.help }}>?</Text>
                         </View>
-                        <Text style={{ flex: 1, fontSize: 16, lineHeight: 22, fontWeight: '600', color: theme.text }}>{item.question}</Text>
+                        <Text style={{ flex: 1, fontSize: font.button, lineHeight: 22, fontWeight: '600', color: theme.text }}>{item.question}</Text>
                         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={expanded ? theme.help : theme.muted} style={{ marginTop: 2 }} />
                       </Pressable>
                       {expanded && (

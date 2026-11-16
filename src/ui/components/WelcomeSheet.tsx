@@ -3,7 +3,7 @@ import { ComponentProps } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 
 interface Props {
   visible: boolean;
@@ -52,9 +52,9 @@ export function WelcomeSheet({ visible, onDone, onTour, onHelp }: Props) {
           onTour();
         }}
         accessibilityRole="button"
-        style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
+        style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 14, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
       >
-        <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Kurze Tour durch die App</Text>
+        <Text style={{ color: theme.onAccent, fontSize: font.button, fontWeight: '600' }}>Kurze Tour durch die App</Text>
       </Pressable>
       <Pressable
         onPress={() => {
@@ -62,9 +62,9 @@ export function WelcomeSheet({ visible, onDone, onTour, onHelp }: Props) {
           onDone();
         }}
         accessibilityRole="button"
-        style={({ pressed }) => ({ borderColor: theme.accent, borderWidth: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+        style={({ pressed }) => ({ borderColor: theme.accent, borderWidth: 1, borderRadius: radius.button, paddingVertical: 13, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
       >
-        <Text style={{ color: theme.accent, fontSize: 16, fontWeight: '600' }}>Direkt loslegen</Text>
+        <Text style={{ color: theme.accent, fontSize: font.button, fontWeight: '600' }}>Direkt loslegen</Text>
       </Pressable>
       <Pressable onPress={onHelp} accessibilityRole="button" style={{ paddingVertical: 6, alignItems: 'center' }}>
         <Text style={[styles.text, { color: theme.accent, fontWeight: '600' }]}>Erst die Anleitung lesen</Text>

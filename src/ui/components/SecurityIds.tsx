@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { useStyles } from '../styles';
+import { radius, useStyles } from '../styles';
 
 const COPIED_MS = 1500;
 
@@ -35,7 +35,7 @@ export function SecurityIds({ isin, wkn }: { isin: string; wkn?: string }) {
             hitSlop={4}
             accessibilityRole="button"
             accessibilityLabel={`${label} ${value} kopieren`}
-            style={({ pressed }) => [styles.row, { gap: 5, backgroundColor: theme.chip, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, opacity: pressed ? 0.6 : 1 }]}
+            style={({ pressed }) => [styles.row, { gap: 5, backgroundColor: theme.chip, borderRadius: radius.small, paddingHorizontal: 8, paddingVertical: 4, opacity: pressed ? 0.6 : 1 }]}
           >
             <Text style={[styles.small, styles.number, { color: done ? theme.positive : theme.text }]}>{done ? `${label} kopiert` : `${label} ${value}`}</Text>
             <Ionicons name={done ? 'checkmark' : 'copy-outline'} size={13} color={done ? theme.positive : theme.muted} />

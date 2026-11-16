@@ -4,7 +4,7 @@ import type { AllocationRow } from '../../finance/allocation';
 import { PositionResult } from '../../finance/performance';
 import { eur, pct, percent, shortPercent } from '../format';
 import { PrivateText } from '../privacy';
-import { signColor, useStyles } from '../styles';
+import { font, radius, signColor, useStyles } from '../styles';
 import { Theme } from '../theme';
 
 export const positionColor = (theme: Theme, index: number) => theme.palette[Math.min(index, theme.palette.length - 1)];
@@ -29,7 +29,7 @@ export function PositionList({ positions, onSelect, allocation, onEditTargets }:
           <Ionicons name="chevron-forward" size={16} color={theme.accent} />
         </Pressable>
       </View>
-      <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2, marginBottom: 4 }}>
+      <View style={{ flexDirection: 'row', height: 8, borderRadius: radius.tiny, overflow: 'hidden', gap: 2, marginBottom: 4 }}>
         {positions.map((p, i) => (
           <View key={p.instrument.isin} style={{ flex: p.share, backgroundColor: positionColor(theme, i) }} />
         ))}
@@ -40,9 +40,9 @@ export function PositionList({ positions, onSelect, allocation, onEditTargets }:
           onPress={() => onSelect(p)}
           style={({ pressed }) => [styles.row, { paddingVertical: 12, gap: 10, opacity: pressed ? 0.6 : 1 }, i > 0 && styles.divider]}
         >
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: positionColor(theme, i) }} />
+          <View style={{ width: 8, height: 8, borderRadius: radius.tiny, backgroundColor: positionColor(theme, i) }} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>{p.instrument.shortName}</Text>
+            <Text style={{ fontSize: font.button, fontWeight: '600', color: theme.text }}>{p.instrument.shortName}</Text>
             <Text style={styles.small}>
               {p.instrument.kind} · {percent(p.share)}
               {allocation.has(p.instrument.isin) && (
@@ -51,7 +51,7 @@ export function PositionList({ positions, onSelect, allocation, onEditTargets }:
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <PrivateText containerStyle={{ alignSelf: 'flex-end' }} style={[styles.number, { fontSize: 16, fontWeight: '600', color: theme.text }]}>
+            <PrivateText containerStyle={{ alignSelf: 'flex-end' }} style={[styles.number, { fontSize: font.button, fontWeight: '600', color: theme.text }]}>
               {eur(p.value)}
             </PrivateText>
             <Text style={[styles.small, styles.number, { color: signColor(theme, p.irr) }]}>{pct(p.irr)} p.a.</Text>

@@ -19,7 +19,7 @@ import type { Instrument } from '../../types';
 import { dayMonth, eur, monthName, monthYear, pct, percent, shortPercent } from '../format';
 import { usePrivacy } from '../privacy';
 import { Sheet } from '../Sheet';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 import { DetailRow, DetailRows } from './DetailRows';
 import { InfoDot } from './InfoDot';
 import { positionColor } from './PositionList';
@@ -123,7 +123,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           backgroundColor: adopted ? theme.accent : 'transparent',
           borderColor: theme.accent,
           borderWidth: 1,
-          borderRadius: 12,
+          borderRadius: radius.button,
           paddingVertical: 13,
           paddingHorizontal: 10,
           alignItems: 'center',
@@ -131,7 +131,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           opacity: pressed ? 0.6 : 1,
         })}
       >
-        <Text style={{ color: adopted ? theme.onAccent : theme.accent, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
+        <Text style={{ color: adopted ? theme.onAccent : theme.accent, fontSize: font.body, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
       </Pressable>
     );
   };
@@ -172,7 +172,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
       disabled={disabled}
       hitSlop={8}
       accessibilityLabel={icon === 'add' ? 'Rendite erhöhen' : 'Rendite senken'}
-      style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: disabled ? 0.35 : pressed ? 0.6 : 1 })}
+      style={({ pressed }) => ({ width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: disabled ? 0.35 : pressed ? 0.6 : 1 })}
     >
       <Ionicons name={icon} size={22} color={theme.text} />
     </Pressable>
@@ -201,7 +201,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         <Text style={[styles.label, { fontWeight: '600' }]}>Wunschbetrag für dein Depot</Text>
         <View style={[styles.row, { gap: 10 }]}>
           <TextInput
-            style={{ flex: 1, backgroundColor: theme.background, color: theme.text, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 }}
+            style={{ flex: 1, backgroundColor: theme.background, color: theme.text, borderRadius: radius.button, paddingHorizontal: 14, paddingVertical: 12, fontSize: font.button }}
             value={input}
             onChangeText={(v) => setInput(v.replace(/\D/g, '').slice(0, 9))}
             keyboardType="number-pad"
@@ -213,13 +213,13 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         <Pressable
           disabled={!valid || unchanged}
           onPress={save}
-          style={({ pressed }) => ({ backgroundColor: unchanged ? theme.chip : theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: !valid && !unchanged ? 0.4 : pressed ? 0.7 : 1 })}
+          style={({ pressed }) => ({ backgroundColor: unchanged ? theme.chip : theme.accent, borderRadius: radius.button, paddingVertical: 14, alignItems: 'center', opacity: !valid && !unchanged ? 0.4 : pressed ? 0.7 : 1 })}
         >
-          <Text style={{ color: unchanged ? theme.muted : theme.onAccent, fontSize: 16, fontWeight: '600' }}>{unchanged ? 'Ziel gesetzt' : goal ? 'Ziel ändern' : 'Ziel festlegen'}</Text>
+          <Text style={{ color: unchanged ? theme.muted : theme.onAccent, fontSize: font.button, fontWeight: '600' }}>{unchanged ? 'Ziel gesetzt' : goal ? 'Ziel ändern' : 'Ziel festlegen'}</Text>
         </Pressable>
         {goal ? (
           <Pressable onPress={() => onChangeGoal(null)} style={{ paddingVertical: 6, alignItems: 'center' }}>
-            <Text style={{ color: theme.negative, fontSize: 15, fontWeight: '600' }}>Ziel entfernen</Text>
+            <Text style={{ color: theme.negative, fontSize: font.body, fontWeight: '600' }}>Ziel entfernen</Text>
           </Pressable>
         ) : null}
       </View>
@@ -228,7 +228,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         <Text style={[styles.label, { fontWeight: '600' }]}>Angenommene Rendite im Jahr</Text>
         <View style={[styles.row, { justifyContent: 'space-between' }]}>
           {stepButton('remove', -RETURN_STEP, annualReturn <= 1e-9)}
-          <Text style={[styles.number, { fontSize: 24, fontWeight: '700', color: theme.text }]}>{shortPercent(annualReturn)}</Text>
+          <Text style={[styles.number, { fontSize: font.stat, fontWeight: '700', color: theme.text }]}>{shortPercent(annualReturn)}</Text>
           {stepButton('add', RETURN_STEP, annualReturn >= MAX_RETURN - 1e-9)}
         </View>
         <Text style={styles.small}>
@@ -259,7 +259,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         </Text>
         <View style={[styles.row, { gap: 10 }]}>
           <TextInput
-            style={{ flex: 1, backgroundColor: theme.background, color: theme.text, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 }}
+            style={{ flex: 1, backgroundColor: theme.background, color: theme.text, borderRadius: radius.button, paddingHorizontal: 14, paddingVertical: 12, fontSize: font.button }}
             value={draw}
             onChangeText={changeDraw}
             keyboardType="number-pad"
@@ -278,7 +278,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
                 disabled={years <= CONSUME_YEARS_MIN}
                 hitSlop={8}
                 accessibilityLabel="Verzehr-Dauer verringern"
-                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years <= CONSUME_YEARS_MIN ? 0.35 : pressed ? 0.6 : 1 })}
+                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years <= CONSUME_YEARS_MIN ? 0.35 : pressed ? 0.6 : 1 })}
               >
                 <Ionicons name="remove" size={18} color={theme.text} />
               </Pressable>
@@ -290,7 +290,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
                 disabled={years >= CONSUME_YEARS_MAX}
                 hitSlop={8}
                 accessibilityLabel="Verzehr-Dauer erhöhen"
-                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years >= CONSUME_YEARS_MAX ? 0.35 : pressed ? 0.6 : 1 })}
+                style={({ pressed }) => ({ width: 32, height: 32, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.chip, opacity: years >= CONSUME_YEARS_MAX ? 0.35 : pressed ? 0.6 : 1 })}
               >
                 <Ionicons name="add" size={18} color={theme.text} />
               </Pressable>

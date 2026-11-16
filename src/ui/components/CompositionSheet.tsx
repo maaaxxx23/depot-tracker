@@ -10,7 +10,7 @@ import type { PositionResult } from '../../finance/performance';
 import { percent } from '../format';
 import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 import { DetailRows } from './DetailRows';
 import { positionColor } from './PositionList';
 import { SecurityIds } from './SecurityIds';
@@ -161,7 +161,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
   if (restCountries > 0.0005) countries.push({ label: `Übrige Länder (${result.countries.length - MAX_COUNTRIES})`, weight: restCountries });
   const uncovered = 1 - result.covered;
   const withRest = (slices: Slice[]) => (uncovered > 0.0005 ? [...slices, { label: 'Nicht ausgewertet', weight: uncovered }] : slices);
-  const chip = (pressed: boolean) => ({ backgroundColor: theme.chip, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, opacity: busy ? 0.4 : pressed ? 0.6 : 1 });
+  const chip = (pressed: boolean) => ({ backgroundColor: theme.chip, borderRadius: radius.control, paddingHorizontal: 12, paddingVertical: 8, opacity: busy ? 0.4 : pressed ? 0.6 : 1 });
 
   // Dieselbe Farbe wie in der Positionen-Karte auf der Startseite
   const colorFor = (isin: string) => {
@@ -309,12 +309,12 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
               <Text style={styles.small}>Liste {i + 1}: {describe(d.fund)}</Text>
               <View style={[styles.row, { gap: 10 }]}>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: d.isin ? theme.text : theme.muted }}>{d.isin ? `→ ${nameOf(d.isin)}` : '→ nicht zuordnen'}</Text>
+                  <Text style={{ fontSize: font.button, fontWeight: '600', color: d.isin ? theme.text : theme.muted }}>{d.isin ? `→ ${nameOf(d.isin)}` : '→ nicht zuordnen'}</Text>
                   {d.isin && !d.confident && <Text style={[styles.small, { color: theme.warn }]}>Nur ein Vorschlag: bitte prüfen</Text>}
                   {d.isin && compositions[d.isin] && <Text style={styles.small}>ersetzt die vorhandene Liste</Text>}
                 </View>
                 <Pressable onPress={() => cycle(i)} style={({ pressed }) => chip(pressed)}>
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: '600' }}>Ändern</Text>
+                  <Text style={{ color: theme.text, fontSize: font.chip, fontWeight: '600' }}>Ändern</Text>
                 </Pressable>
               </View>
             </View>
@@ -323,19 +323,19 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
             <Pressable
               onPress={applyDrafts}
               disabled={!drafts.some((d) => d.isin)}
-              style={({ pressed }) => ({ flex: 1, backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: !drafts.some((d) => d.isin) ? 0.4 : pressed ? 0.7 : 1 })}
+              style={({ pressed }) => ({ flex: 1, backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 12, alignItems: 'center', opacity: !drafts.some((d) => d.isin) ? 0.4 : pressed ? 0.7 : 1 })}
             >
-              <Text style={{ color: theme.onAccent, fontSize: 15, fontWeight: '600' }}>Übernehmen</Text>
+              <Text style={{ color: theme.onAccent, fontSize: font.body, fontWeight: '600' }}>Übernehmen</Text>
             </Pressable>
-            <Pressable onPress={() => setDrafts(null)} style={({ pressed }) => ({ flex: 1, backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}>
-              <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>Verwerfen</Text>
+            <Pressable onPress={() => setDrafts(null)} style={({ pressed }) => ({ flex: 1, backgroundColor: theme.chip, borderRadius: radius.button, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}>
+              <Text style={{ color: theme.text, fontSize: font.body, fontWeight: '600' }}>Verwerfen</Text>
             </Pressable>
           </View>
         </View>
       ) : (
         funds.length > 0 && (
-          <Pressable onPress={importMany} disabled={busy} style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: busy ? 0.4 : pressed ? 0.7 : 1 })}>
-            <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Alle Listen auf einmal importieren</Text>
+          <Pressable onPress={importMany} disabled={busy} style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 14, alignItems: 'center', opacity: busy ? 0.4 : pressed ? 0.7 : 1 })}>
+            <Text style={{ color: theme.onAccent, fontSize: font.button, fontWeight: '600' }}>Alle Listen auf einmal importieren</Text>
           </Pressable>
         )
       )}
@@ -349,7 +349,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
           return (
             <View key={p.instrument.isin} style={[styles.row, { paddingVertical: 12, gap: 10 }, i > 0 && styles.divider]}>
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colorFor(p.instrument.isin) }}>{p.instrument.shortName}</Text>
+                <Text style={{ fontSize: font.button, fontWeight: '600', color: colorFor(p.instrument.isin) }}>{p.instrument.shortName}</Text>
                 {/* Zum Suchen beim Anbieter: Antippen kopiert die jeweilige Nummer */}
                 <View style={{ marginVertical: 2 }}>
                   <SecurityIds isin={p.instrument.isin} wkn={p.instrument.wkn} />
@@ -372,7 +372,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
               </View>
               {!isStock && (
                 <Pressable onPress={() => importFor(p.instrument.isin)} disabled={busy} style={({ pressed }) => chip(pressed)}>
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: '600' }}>{fund ? 'Aktualisieren' : 'Importieren'}</Text>
+                  <Text style={{ color: theme.text, fontSize: font.chip, fontWeight: '600' }}>{fund ? 'Aktualisieren' : 'Importieren'}</Text>
                 </Pressable>
               )}
             </View>

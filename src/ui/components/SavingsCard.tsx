@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { GoalProjection, Savings } from '../../finance/savings';
 import { eur, percent } from '../format';
 import { PrivateText } from '../privacy';
-import { useStyles } from '../styles';
+import { font, useStyles } from '../styles';
 
 interface Props {
   savings: Savings;
@@ -30,11 +30,11 @@ export function SavingsCard({ savings, goal, projection, onOpen }: Props) {
         <Ionicons name="chevron-forward" size={14} color={theme.muted} />
       </View>
       {hasRate ? (
-        <PrivateText containerStyle={{ alignSelf: 'flex-start' }} style={[styles.number, { fontSize: 22, fontWeight: '700', color: theme.text }]}>
+        <PrivateText containerStyle={{ alignSelf: 'flex-start' }} style={[styles.number, { fontSize: font.sheetTitle, fontWeight: '700', color: theme.text }]}>
           {eur(savings.monthlyRate)}
         </PrivateText>
       ) : (
-        <Text style={{ fontSize: 22, fontWeight: '700', color: theme.muted }}>–</Text>
+        <Text style={{ fontSize: font.sheetTitle, fontWeight: '700', color: theme.muted }}>–</Text>
       )}
       <Text style={styles.small}>{hasRate ? 'Sparrate im Monat' : 'keine Sparrate erkannt'}</Text>
       {goal && projection ? (

@@ -9,7 +9,7 @@ import { openChallenges } from '../../data/store';
 import type { StoredPortfolio } from '../../data/store';
 import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 
 type Phase = 'connecting' | 'challenge' | 'loading' | 'error';
 
@@ -98,9 +98,11 @@ export function LoginSheet({ visible, setup, onClose, onSynced }: Props) {
         tapFeedback();
         onPress();
       }}
-      style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: disabled ? 0.4 : pressed ? 0.7 : 1 })}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 14, alignItems: 'center', opacity: disabled ? 0.4 : pressed ? 0.7 : 1 })}
     >
-      <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>{label}</Text>
+      <Text style={{ color: theme.onAccent, fontSize: font.button, fontWeight: '600' }}>{label}</Text>
     </Pressable>
   );
 
@@ -119,7 +121,8 @@ export function LoginSheet({ visible, setup, onClose, onSynced }: Props) {
       textContentType="oneTimeCode"
       placeholder="TAN"
       placeholderTextColor={theme.muted}
-      style={{ backgroundColor: theme.card, color: theme.text, borderRadius: 12, padding: 14, fontSize: 22, letterSpacing: 6, textAlign: 'center' }}
+      accessibilityLabel="TAN eingeben"
+      style={{ backgroundColor: theme.card, color: theme.text, borderRadius: radius.button, padding: 14, fontSize: font.sheetTitle, letterSpacing: 6, textAlign: 'center' }}
     />
   );
 

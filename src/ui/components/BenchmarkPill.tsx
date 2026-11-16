@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text } from 'react-native';
 import { points } from '../format';
-import { useStyles } from '../styles';
+import { font, useStyles } from '../styles';
 
 const TIE = 0.005;
 
@@ -30,7 +30,7 @@ export function BenchmarkPill({ irr, benchmarkIrr, name, onPress }: Props) {
       style={({ pressed }) => [styles.row, styles.divider, { gap: 6, paddingTop: 10, opacity: pressed ? 0.6 : 1 }]}
     >
       <Ionicons name={icon} size={16} color={color} />
-      <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color }}>{text}</Text>
+      <Text style={{ flex: 1, fontSize: font.chip, fontWeight: '600', color }}>{text}</Text>
       <Ionicons name="chevron-forward" size={14} color={theme.muted} />
     </Pressable>
   );

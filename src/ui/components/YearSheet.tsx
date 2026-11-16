@@ -4,7 +4,7 @@ import type { YearsOverview } from '../../finance/years';
 import { eur, pct, signedEur } from '../format';
 import { PrivateText } from '../privacy';
 import { Sheet } from '../Sheet';
-import { signColor, useStyles } from '../styles';
+import { font, signColor, useStyles } from '../styles';
 import { DetailRow, DetailRows } from './DetailRows';
 
 interface Props {
@@ -34,7 +34,7 @@ export function YearSheet({ visible, onClose, overview, benchmarkName, vorab }: 
     <Sheet visible={visible} onClose={onClose} title="Jahresübersicht">
       <View style={[styles.card, { gap: 4 }]}>
         <Text style={styles.label}>Gewinn seit Beginn</Text>
-        <PrivateText style={[styles.number, { fontSize: 34, fontWeight: '700', color: signColor(theme, total.gain) }]}>{signedEur(total.gain)}</PrivateText>
+        <PrivateText style={[styles.number, { fontSize: font.heroSheet, fontWeight: '700', color: signColor(theme, total.gain) }]}>{signedEur(total.gain)}</PrivateText>
         <Text style={styles.small}>Setzt sich so zusammen:</Text>
       </View>
       <DetailRows rows={totalRows} />
@@ -61,7 +61,7 @@ export function YearSheet({ visible, onClose, overview, benchmarkName, vorab }: 
         return (
           <View key={y.year} style={{ gap: 8, marginTop: 8 }}>
             <View style={[styles.row, { gap: 8, paddingHorizontal: 4 }]}>
-              <Text style={[styles.number, { fontSize: 20, fontWeight: '700', color: theme.text }]}>{y.year}</Text>
+              <Text style={[styles.number, { fontSize: font.statSmall, fontWeight: '700', color: theme.text }]}>{y.year}</Text>
               {y.running && <Text style={styles.label}>bisher</Text>}
             </View>
             <DetailRows rows={rows} />

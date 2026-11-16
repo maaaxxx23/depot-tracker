@@ -3,6 +3,7 @@ import { ComponentRef, ReactNode, Ref } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ShieldOverlay } from './AppLock';
 import { useTheme } from './theme';
+import { font } from './styles';
 
 interface Props {
   visible: boolean;
@@ -46,6 +47,6 @@ export function Sheet({ visible, title, onClose, scrollRef, children }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingTop: 20 },
-  title: { fontSize: 22, fontWeight: '700', flex: 1, marginRight: 12 },
+  title: { fontSize: font.sheetTitle, fontWeight: '700', flex: 1, marginRight: 12 },
   content: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
 });

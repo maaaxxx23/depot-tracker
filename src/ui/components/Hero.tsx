@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import { dateTime, eur, pct, signedEur } from '../format';
 import { PrivateText, usePrivacy } from '../privacy';
-import { signColor, useStyles } from '../styles';
+import { font, signColor, useStyles } from '../styles';
 import { TypedAmount } from './TypedAmount';
 
 interface Props {
@@ -29,12 +29,12 @@ interface Props {
 export function Hero({ demo, value, gain, irr, periodLabel, updatedAt, holdingsFrom, sinceBuy, onRefresh, onPreviewVisit }: Props) {
   const { theme, styles } = useStyles();
   const { hidden, toggle } = usePrivacy();
-  const gainStyle = [styles.number, { fontSize: 17, fontWeight: '600' as const, color: signColor(theme, irr) }];
+  const gainStyle = [styles.number, { fontSize: font.title, fontWeight: '600' as const, color: signColor(theme, irr) }];
 
   return (
     <View style={{ gap: 4 }}>
       <View style={[styles.row, { justifyContent: 'space-between' }]}>
-        <Text style={{ fontSize: 17, fontWeight: '600', color: theme.muted }}>{demo ? 'Demo-Depot' : 'Depot'}</Text>
+        <Text style={{ fontSize: font.title, fontWeight: '600', color: theme.muted }}>{demo ? 'Demo-Depot' : 'Depot'}</Text>
         <View style={[styles.row, { gap: 14 }]}>
           <Pressable onPress={onRefresh} hitSlop={10} accessibilityLabel="Mit comdirect aktualisieren">
             <Ionicons name="refresh" size={21} color={theme.muted} />
@@ -45,7 +45,7 @@ export function Hero({ demo, value, gain, irr, periodLabel, updatedAt, holdingsF
         </View>
       </View>
       <Pressable onLongPress={onPreviewVisit} delayLongPress={500} disabled={!onPreviewVisit} style={{ alignSelf: 'flex-start' }}>
-        <TypedAmount style={[styles.number, { fontSize: 44, fontWeight: '700', color: theme.text, letterSpacing: -0.5 }]}>
+        <TypedAmount style={[styles.number, { fontSize: font.hero, fontWeight: '700', color: theme.text, letterSpacing: -0.5 }]}>
           {`${holdingsFrom ? '≈ ' : ''}${eur(value)}`}
         </TypedAmount>
       </Pressable>
@@ -56,7 +56,7 @@ export function Hero({ demo, value, gain, irr, periodLabel, updatedAt, holdingsF
       <View style={[styles.row, { flexWrap: 'wrap' }]}>
         <PrivateText style={gainStyle}>{signedEur(gain)}</PrivateText>
         <Text style={gainStyle}> · {pct(irr)} p.a.</Text>
-        <Text style={{ fontSize: 17, color: theme.muted }}>  {periodLabel}</Text>
+        <Text style={{ fontSize: font.title, color: theme.muted }}>  {periodLabel}</Text>
       </View>
       {sinceBuy && (
         <View style={[styles.row, { flexWrap: 'wrap' }]}>

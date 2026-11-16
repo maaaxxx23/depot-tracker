@@ -5,7 +5,7 @@ import { compactEur, eur, monthYear, pct } from '../format';
 import { BenchmarkPill } from './BenchmarkPill';
 import { ChartSeries, LineChart } from '../LineChart';
 import { PrivateText, usePrivacy } from '../privacy';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 
 interface Props {
   series: SeriesPoint[];
@@ -27,7 +27,7 @@ interface Props {
 
 const HEADER_HEIGHT = 22;
 
-const Dot = ({ color }: { color: string }) => <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />;
+const Dot = ({ color }: { color: string }) => <View style={{ width: 8, height: 8, borderRadius: radius.tiny, backgroundColor: color }} />;
 
 export function ChartCard({ series, benchmarkName, periods, periodIndex, available, historyHint, benchmark, mode, onModeChange, onPeriodChange }: Props) {
   const { theme, styles } = useStyles();
@@ -118,31 +118,31 @@ export function ChartCard({ series, benchmarkName, periods, periodIndex, availab
       />
 
       <View style={[styles.row, { gap: 8 }]}>
-      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.chip, borderRadius: 10, padding: 3 }}>
+      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.chip, borderRadius: radius.control, padding: 3 }}>
         {periods.map((p, i) => (
           <Pressable
             key={p.label}
             disabled={!available[i]}
             onPress={() => onPeriodChange(i)}
             accessibilityState={{ selected: i === periodIndex, disabled: !available[i] }}
-            style={{ flex: 1, paddingVertical: 7, borderRadius: 8, alignItems: 'center', backgroundColor: i === periodIndex ? theme.card : 'transparent', opacity: available[i] ? 1 : 0.35 }}
+            style={{ flex: 1, paddingVertical: 7, borderRadius: radius.small, alignItems: 'center', backgroundColor: i === periodIndex ? theme.card : 'transparent', opacity: available[i] ? 1 : 0.35 }}
           >
-            <Text style={{ fontSize: 14, color: i === periodIndex ? theme.text : theme.muted, fontWeight: i === periodIndex ? '600' : '500' }}>
+            <Text style={{ fontSize: font.chip, color: i === periodIndex ? theme.text : theme.muted, fontWeight: i === periodIndex ? '600' : '500' }}>
               {p.label}
             </Text>
           </Pressable>
         ))}
       </View>
-      <View style={{ flexDirection: 'row', backgroundColor: theme.chip, borderRadius: 10, padding: 3 }}>
+      <View style={{ flexDirection: 'row', backgroundColor: theme.chip, borderRadius: radius.control, padding: 3 }}>
         {(['value', 'return'] as const).map((m) => (
           <Pressable
             key={m}
             onPress={() => onModeChange(m)}
             accessibilityLabel={m === 'value' ? 'Wert in Euro' : 'Rendite in Prozent'}
             accessibilityState={{ selected: mode === m }}
-            style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', backgroundColor: mode === m ? theme.card : 'transparent' }}
+            style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: radius.small, alignItems: 'center', backgroundColor: mode === m ? theme.card : 'transparent' }}
           >
-            <Text style={{ fontSize: 14, color: mode === m ? theme.text : theme.muted, fontWeight: mode === m ? '600' : '500' }}>
+            <Text style={{ fontSize: font.chip, color: mode === m ? theme.text : theme.muted, fontWeight: mode === m ? '600' : '500' }}>
               {m === 'value' ? '€' : '%'}
             </Text>
           </Pressable>

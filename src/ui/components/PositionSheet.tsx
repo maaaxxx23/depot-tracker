@@ -5,7 +5,7 @@ import { dayMonth, eur, monthYear, pct, percent, price, quantity, signedEur } fr
 import { LineChart } from '../LineChart';
 import { PrivateText } from '../privacy';
 import { Sheet } from '../Sheet';
-import { signColor, useStyles } from '../styles';
+import { font, radius, signColor, useStyles } from '../styles';
 import { DetailRows } from './DetailRows';
 import { SecurityIds } from './SecurityIds';
 
@@ -26,7 +26,7 @@ export function PositionSheet({ position, color, bankCost, prepaidTax, plan, onM
   const { theme, styles } = useStyles();
   if (!position) return null;
   const p = position;
-  const gainStyle = [styles.number, { fontSize: 16, fontWeight: '600' as const, color: signColor(theme, p.irr) }];
+  const gainStyle = [styles.number, { fontSize: font.button, fontWeight: '600' as const, color: signColor(theme, p.irr) }];
   // Verkäufe markieren, damit der Rückgang nicht wie ein Kurseinbruch aussieht
   const sales = p.series.flatMap((s, i) => (s.sold > 0 && i > 0 ? [i] : []));
 
@@ -37,7 +37,7 @@ export function PositionSheet({ position, color, bankCost, prepaidTax, plan, onM
           {p.instrument.kind} · {percent(p.share)} vom Depot
         </Text>
         <SecurityIds isin={p.instrument.isin} wkn={p.instrument.wkn} />
-        <PrivateText style={[styles.number, { fontSize: 34, fontWeight: '700', color: theme.text }]}>{eur(p.value)}</PrivateText>
+        <PrivateText style={[styles.number, { fontSize: font.heroSheet, fontWeight: '700', color: theme.text }]}>{eur(p.value)}</PrivateText>
         <View style={styles.row}>
           <PrivateText style={gainStyle}>{signedEur(p.gain)}</PrivateText>
           <Text style={gainStyle}> · {pct(p.irr)} p.a.</Text>
@@ -56,7 +56,7 @@ export function PositionSheet({ position, color, bankCost, prepaidTax, plan, onM
           <Text style={styles.small}>{monthYear(p.series[0].date)}</Text>
           {sales.length > 0 && (
             <View style={[styles.row, { gap: 5 }]}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.sale }} />
+              <View style={{ width: 8, height: 8, borderRadius: radius.tiny, backgroundColor: theme.sale }} />
               <Text style={styles.small}>Verkauf</Text>
             </View>
           )}

@@ -7,7 +7,7 @@ import { tapFeedback } from '../haptics';
 import { PrivateText } from '../privacy';
 import { RichText } from '../RichText';
 import { Sheet } from '../Sheet';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 import { positionColor } from './PositionList';
 
 interface Props {
@@ -68,16 +68,16 @@ export function AllocationSheet({ visible, onClose, positions, targets, allocati
           const row = allocation.get(p.instrument.isin);
           return (
             <View key={p.instrument.isin} style={[styles.row, { paddingVertical: 12, gap: 10 }, i > 0 && styles.divider]}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: positionColor(theme, i) }} />
+              <View style={{ width: 8, height: 8, borderRadius: radius.tiny, backgroundColor: positionColor(theme, i) }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: theme.text }}>{p.instrument.shortName}</Text>
+                <Text style={{ fontSize: font.button, fontWeight: '600', color: theme.text }}>{p.instrument.shortName}</Text>
                 <Text style={[styles.small, row?.off && { color: theme.warn }]}>
                   aktuell {percent(p.share)}
                   {row && Math.abs(row.deviation) >= 0.0005 ? ` · ${points(row.deviation)} ${row.deviation > 0 ? 'über' : 'unter'} Ziel` : ''}
                 </Text>
               </View>
               <TextInput
-                style={{ width: 64, textAlign: 'right', backgroundColor: theme.background, color: theme.text, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 16, fontVariant: ['tabular-nums'] }}
+                style={{ width: 64, textAlign: 'right', backgroundColor: theme.background, color: theme.text, borderRadius: radius.control, paddingHorizontal: 10, paddingVertical: 8, fontSize: font.button, fontVariant: ['tabular-nums'] }}
                 value={inputs[p.instrument.isin] ?? ''}
                 onChangeText={(v) => setInputs((prev) => ({ ...prev, [p.instrument.isin]: v.replace(/\D/g, '').slice(0, 3) }))}
                 keyboardType="number-pad"
@@ -100,12 +100,12 @@ export function AllocationSheet({ visible, onClose, positions, targets, allocati
       <Pressable
         disabled={!valid}
         onPress={save}
-        style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: !valid ? 0.4 : pressed ? 0.7 : 1 })}
+        style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 14, alignItems: 'center', opacity: !valid ? 0.4 : pressed ? 0.7 : 1 })}
       >
-        <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Speichern</Text>
+        <Text style={{ color: theme.onAccent, fontSize: font.button, fontWeight: '600' }}>Speichern</Text>
       </Pressable>
-      <Pressable onPress={fillCurrent} style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}>
-        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>Heutige Aufteilung eintragen</Text>
+      <Pressable onPress={fillCurrent} style={({ pressed }) => ({ backgroundColor: theme.chip, borderRadius: radius.button, paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}>
+        <Text style={{ color: theme.text, fontSize: font.body, fontWeight: '600' }}>Heutige Aufteilung eintragen</Text>
       </Pressable>
       {active && (
         <Pressable
@@ -115,7 +115,7 @@ export function AllocationSheet({ visible, onClose, positions, targets, allocati
           }}
           style={{ paddingVertical: 8, alignItems: 'center' }}
         >
-          <Text style={{ color: theme.negative, fontSize: 15, fontWeight: '600' }}>Zielaufteilung entfernen</Text>
+          <Text style={{ color: theme.negative, fontSize: font.body, fontWeight: '600' }}>Zielaufteilung entfernen</Text>
         </Pressable>
       )}
 
@@ -135,7 +135,7 @@ export function AllocationSheet({ visible, onClose, positions, targets, allocati
             return (
               <View key={entry.isin} style={[styles.row, { gap: 10, justifyContent: 'space-between' }]}>
                 <View style={[styles.row, { gap: 10, flexShrink: 1 }]}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: positionColor(theme, index) }} />
+                  <View style={{ width: 8, height: 8, borderRadius: radius.tiny, backgroundColor: positionColor(theme, index) }} />
                   <Text style={[styles.text, { flexShrink: 1 }]} numberOfLines={1}>
                     {positions[index].instrument.shortName}
                   </Text>

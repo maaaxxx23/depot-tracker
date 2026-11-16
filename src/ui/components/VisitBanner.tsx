@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { VisitBannerContent } from '../../finance/visit';
 import { pct, relativeTime, signedEur } from '../format';
 import { PrivateText } from '../privacy';
-import { signColor, useStyles } from '../styles';
+import { font, radius, signColor, useStyles } from '../styles';
 
 const SHOW_MS = 5000;
 const SLIDE_MS = 320;
@@ -59,21 +59,18 @@ export function VisitBanner({ content, onDone }: { content: VisitBannerContent; 
             paddingVertical: 14,
             borderWidth: 1,
             borderColor: theme.border,
-            shadowColor: '#000',
-            shadowOpacity: 0.18,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 6 },
           },
+          styles.floatingHigh,
         ]}
       >
-        <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: iconBackground }}>
+        <View style={{ width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: iconBackground }}>
           <Ionicons name={icon} size={22} color={color} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <View style={[styles.row, { gap: 6 }]}>
             {isChange && content.sample && (
               <View style={{ backgroundColor: theme.chip, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: theme.muted }}>BEISPIEL</Text>
+                <Text style={{ fontSize: font.badge, fontWeight: '700', color: theme.muted }}>BEISPIEL</Text>
               </View>
             )}
             <Text style={[styles.small, { flexShrink: 1 }]}>{headline}</Text>
@@ -81,8 +78,8 @@ export function VisitBanner({ content, onDone }: { content: VisitBannerContent; 
           {isChange ? (
             <>
               <View style={[styles.row, { flexWrap: 'wrap' }]}>
-                <PrivateText style={[styles.number, { fontSize: 20, fontWeight: '700', color }]}>{`${content.estimate ? '≈ ' : ''}${signedEur(content.amount)}`}</PrivateText>
-                <Text style={[styles.number, { fontSize: 20, fontWeight: '700', color }]}> · {pct(content.rel)}</Text>
+                <PrivateText style={[styles.number, { fontSize: font.statSmall, fontWeight: '700', color }]}>{`${content.estimate ? '≈ ' : ''}${signedEur(content.amount)}`}</PrivateText>
+                <Text style={[styles.number, { fontSize: font.statSmall, fontWeight: '700', color }]}> · {pct(content.rel)}</Text>
               </View>
               <Text style={styles.small}>
                 {content.sample
@@ -94,7 +91,7 @@ export function VisitBanner({ content, onDone }: { content: VisitBannerContent; 
             </>
           ) : (
             <>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>{content.since ? 'Keine neuen Kurse' : 'Noch kein Vergleich'}</Text>
+              <Text style={{ fontSize: font.heading, fontWeight: '700', color: theme.text }}>{content.since ? 'Keine neuen Kurse' : 'Noch kein Vergleich'}</Text>
               <Text style={styles.small}>
                 {content.since
                   ? 'Außerhalb der Börsenzeiten bewegt sich nichts. Während des Handels kommen alle 15 Minuten neue Kurse.'

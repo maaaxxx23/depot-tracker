@@ -10,7 +10,7 @@ import { setHapticsEnabled } from '../haptics';
 import { eur, monthYear } from '../format';
 import { Sheet } from '../Sheet';
 import { tapFeedback } from '../haptics';
-import { useStyles } from '../styles';
+import { font, radius, useStyles } from '../styles';
 import { InfoDot } from './InfoDot';
 
 type TextInputHandle = React.ComponentRef<typeof TextInput>;
@@ -39,7 +39,7 @@ function KeyboardBar({ label, onPress }: { label: string; onPress: () => void })
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'flex-end', backgroundColor: theme.card, borderTopWidth: 0.5, borderTopColor: theme.muted }}>
       <Pressable onPress={onPress} hitSlop={8} style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
-        <Text style={{ color: theme.accent, fontSize: 16, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: theme.accent, fontSize: font.button, fontWeight: '600' }}>{label}</Text>
       </Pressable>
     </View>
   );
@@ -239,8 +239,8 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
       setBusy(false);
     }
   };
-  const secondary = { flex: 1, backgroundColor: theme.chip, borderRadius: 10, paddingVertical: 11, alignItems: 'center' as const };
-  const secondaryText = { color: theme.accent, fontSize: 15, fontWeight: '600' as const };
+  const secondary = { flex: 1, backgroundColor: theme.chip, borderRadius: radius.control, paddingVertical: 11, alignItems: 'center' as const };
+  const secondaryText = { color: theme.accent, fontSize: font.body, fontWeight: '600' as const };
 
   const disconnect = () =>
     Alert.alert('Zugang löschen?', 'Zugangsdaten und gespeicherte Depotdaten werden von diesem iPhone entfernt. Sichere vorher deine Daten, wenn du die gesammelten Umsätze behalten willst.', [
@@ -259,10 +259,10 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
   const input = {
     backgroundColor: theme.card,
     color: theme.text,
-    borderRadius: 12,
+    borderRadius: radius.button,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 16,
+    fontSize: font.button,
   } as const;
   const field = (label: string, hint: string | null, node: React.ReactNode) => (
     <View style={{ gap: 6 }}>
@@ -343,9 +343,9 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
           <Pressable
             disabled={!complete || saving}
             onPress={save}
-            style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', opacity: !complete || saving ? 0.4 : pressed ? 0.7 : 1 })}
+            style={({ pressed }) => ({ backgroundColor: theme.accent, borderRadius: radius.button, paddingVertical: 14, alignItems: 'center', opacity: !complete || saving ? 0.4 : pressed ? 0.7 : 1 })}
           >
-            <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: '600' }}>Speichern</Text>
+            <Text style={{ color: theme.onAccent, fontSize: font.button, fontWeight: '600' }}>Speichern</Text>
           </Pressable>
         </>
       )}
@@ -383,13 +383,13 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
                   style={({ pressed }) => ({
                     flex: 1,
                     paddingVertical: 8,
-                    borderRadius: 10,
+                    borderRadius: radius.control,
                     alignItems: 'center',
                     backgroundColor: autoLock === m ? theme.accent : theme.chip,
                     opacity: pressed ? 0.7 : 1,
                   })}
                 >
-                  <Text style={{ color: autoLock === m ? theme.onAccent : theme.text, fontSize: 14, fontWeight: '600' }}>{m === 0 ? 'Aus' : `${m} Min.`}</Text>
+                  <Text style={{ color: autoLock === m ? theme.onAccent : theme.text, fontSize: font.chip, fontWeight: '600' }}>{m === 0 ? 'Aus' : `${m} Min.`}</Text>
                 </Pressable>
               ))}
             </View>
@@ -413,13 +413,13 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
               style={({ pressed }) => ({
                 flex: 1,
                 paddingVertical: 8,
-                borderRadius: 10,
+                borderRadius: radius.control,
                 alignItems: 'center',
                 backgroundColor: mode === c.value ? theme.accent : theme.chip,
                 opacity: pressed ? 0.7 : 1,
               })}
             >
-              <Text style={{ color: mode === c.value ? theme.onAccent : theme.text, fontSize: 14, fontWeight: '600' }}>{c.label}</Text>
+              <Text style={{ color: mode === c.value ? theme.onAccent : theme.text, fontSize: font.chip, fontWeight: '600' }}>{c.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -479,7 +479,7 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
 
       {setup && (
         <Pressable onPress={disconnect} style={{ paddingVertical: 12, alignItems: 'center' }}>
-          <Text style={{ color: theme.negative, fontSize: 15, fontWeight: '600' }}>Zugang löschen</Text>
+          <Text style={{ color: theme.negative, fontSize: font.body, fontWeight: '600' }}>Zugang löschen</Text>
         </Pressable>
       )}
     </Sheet>

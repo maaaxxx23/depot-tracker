@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { YearResult } from '../../finance/years';
 import { pct, signedEur } from '../format';
 import { PrivateText } from '../privacy';
-import { signColor, useStyles } from '../styles';
+import { font, signColor, useStyles } from '../styles';
 
 interface Props {
   /** Neuestes Jahr zuerst */
@@ -29,7 +29,7 @@ export function YearList({ years, onOpen }: Props) {
         <Text style={styles.label}>Jahre</Text>
         <Ionicons name="chevron-forward" size={14} color={theme.muted} />
       </View>
-      <PrivateText containerStyle={{ alignSelf: 'flex-start' }} style={[styles.number, { fontSize: 22, fontWeight: '700', color: signColor(theme, current.gain) }]}>
+      <PrivateText containerStyle={{ alignSelf: 'flex-start' }} style={[styles.number, { fontSize: font.sheetTitle, fontWeight: '700', color: signColor(theme, current.gain) }]}>
         {signedEur(current.gain)}
       </PrivateText>
       <Text style={styles.small}>
