@@ -63,7 +63,7 @@ export const GUIDE: GuideSection[] = [
       '• Rückblick: in den ersten Tagen eines Monats eine kleine Karte zum Vormonat – was du eingezahlt hast, was die Kurse gemacht haben und die Veränderung insgesamt. Das ✕ fragt, ob die Karte nur auf eine Zeile eingeklappt (mit + wieder aufklappbar) oder bis zum nächsten Monat ausgeblendet werden soll; ganz aus- und einschalten lässt sich der Rückblick unter „Zugang verwalten“ → „Darstellung“.',
       '• Hinweise: z. B. ein Rücksetzer gegenüber dem Höchststand, Gebühren, Meilensteine oder ein zu großes Gewicht einzelner Aktien.',
       '• Sparen & Ziel: deine Sparrate und der Fortschritt zu deinem Wunschbetrag. Antippen zeigt Details, auch was du dieses Jahr eingezahlt hast.',
-      '• Positionen: Aufteilung als Balken und jede Position mit Wert und Rendite. Antippen öffnet die Details. Über „Zielaufteilung“ legst du Wunschanteile fest.',
+      '• Positionen: Aufteilung als Balken und jede Position mit Wert und Rendite. Antippen öffnet die Details, dort kannst du auch eine eigene Notiz hinterlegen („Warum gekauft?“). Über „Zielaufteilung“ legst du Wunschanteile fest.',
       '• Was steckt drin: die größten Länder und Branchen über alle deine ETFs. Antippen öffnet die Details und den Import der Bestandslisten.',
       '• Jahre: Gewinn und Rendite des laufenden Jahres, darunter die Vorjahre. Antippen öffnet die Jahresübersicht.',
     ],
@@ -77,7 +77,7 @@ export const GUIDE: GuideSection[] = [
       '• % zeigt die reine Wertentwicklung: Käufe und Verkäufe verschieben die Linie nicht. So siehst du direkt, ob deine Auswahl oder der MSCI World besser lief.',
       '• Violett gestrichelt: Hier ist der Wert wegen eines Verkaufs gesunken, nicht wegen fallender Kurse.',
       '• Mit dem Finger über den Chart ziehen zeigt die Werte jeder Woche.',
-      '• Unten in der Karte: wie viele Prozentpunkte pro Jahr du vor oder hinter dem MSCI World liegst. Antippen zeigt die Details.',
+      '• Unten in der Karte: wie viele Prozentpunkte pro Jahr du vor oder hinter dem Vergleichsindex liegst. Antippen zeigt die Details – dort kannst du den Index auch wechseln (MSCI World, S&P 500, FTSE All-World, MSCI EM, Nasdaq 100).',
       '• Die App merkt sich, ob du zuletzt € oder % gewählt hast.',
     ],
   },
@@ -159,7 +159,7 @@ export const GUIDE: GuideSection[] = [
     body: [
       'Die App sammelt mit jedem Abruf und Import Umsätze, die comdirect später nicht mehr liefert. Damit sie ein Löschen der App überstehen:',
       '„Zugang verwalten“ → „Sichern“ → „In Dateien sichern“ → iCloud Drive.',
-      '„Wiederherstellen“ führt eine Sicherung mit dem aktuellen Stand zusammen und überschreibt nichts. Die Datei enthält deine Depotdaten, Ziel, angenommene Rendite, Sparplan-Markierungen, Zielaufteilung und die importierten ETF-Listen, aber keine Zugangsdaten.',
+      '„Wiederherstellen“ führt eine Sicherung mit dem aktuellen Stand zusammen und überschreibt nichts. Die Datei enthält deine Depotdaten, Ziel, angenommene Rendite, Sparplan-Markierungen, Zielaufteilung, Notizen und die importierten ETF-Listen, aber keine Zugangsdaten.',
       'Einstellungen, die auf dem iPhone schon gesetzt sind, bleiben beim Wiederherstellen erhalten. Die Sicherung ergänzt nur, was fehlt.',
       'Ist die letzte Sicherung älter als vier Wochen, erinnert dich die App nach einem Abruf daran.',
     ],
@@ -205,9 +205,10 @@ export const FAQ: FaqGroup[] = [
         ],
       },
       {
-        question: 'Wie wird der Vergleich mit dem MSCI World berechnet?',
+        question: 'Wie wird der Vergleich mit dem Index berechnet?',
         answer: [
-          'Die App spielt ein Schattendepot durch: Es startet mit demselben Wert wie dein Depot und bekommt genau dieselben Ein- und Auszahlungen am selben Tag. Nur fließt jeder Euro in einen thesaurierenden MSCI-World-ETF (iShares Core, Xetra). So zählt allein, welche Wertpapiere du gewählt hast.',
+          'Die App spielt ein Schattendepot durch: Es startet mit demselben Wert wie dein Depot und bekommt genau dieselben Ein- und Auszahlungen am selben Tag. Nur fließt jeder Euro in einen thesaurierenden ETF auf den gewählten Index (Vorgabe: MSCI World über iShares Core, Xetra). So zählt allein, welche Wertpapiere du gewählt hast.',
+          'Den Index wechselst du in den Vergleichs-Details unter dem Chart. Nach dem Wechsel lädt die App die Kurse des neuen Index kurz nach.',
         ],
       },
       {

@@ -11,11 +11,13 @@ interface Props {
   onClose: () => void;
   /** Zugriff auf die ScrollView, z. B. um zu einem Abschnitt zu scrollen */
   scrollRef?: Ref<ComponentRef<typeof ScrollView>>;
+  /** Schwebt über dem Inhalt, z. B. eine Erfolgs-Einblendung */
+  notice?: ReactNode;
   children: ReactNode;
 }
 
 /** Detailblatt, das von unten hochkommt (auf iOS das native Sheet). */
-export function Sheet({ visible, title, onClose, scrollRef, children }: Props) {
+export function Sheet({ visible, title, onClose, scrollRef, notice, children }: Props) {
   const theme = useTheme();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -36,6 +38,7 @@ export function Sheet({ visible, title, onClose, scrollRef, children }: Props) {
         >
           {children}
         </ScrollView>
+        {notice}
         {/* Blätter sind native Modals und liegen über den Overlays der App:
             Sperre und Vorhang decken sie deshalb hier selbst ab */}
         <ShieldOverlay />

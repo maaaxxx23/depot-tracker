@@ -12,7 +12,7 @@ import { assignHoldings, describeFund, matchScore } from '../src/finance/holding
 import { analyzeComposition, companyKey, displayName, UNKNOWN } from '../src/finance/composition';
 import { backupDue, mergeLists, mergeSettings, mergeStored, NO_LISTS, NO_SETTINGS, parseBackup, parseBackupLists, parseBackupSettings, serializeBackup } from '../src/data/backupFormat';
 import { addCsvTransactions, decodeCsv, germanNumber, instrumentFromText, knownInstrumentIds, parseComdirectCsv, parseDepotCsv } from '../src/data/csvImport';
-import { BENCHMARK, fetchChart, findSymbol, loadMarketData, loadQuotes, needsRefresh, quotesStale } from '../src/market/yahoo';
+import { BENCHMARK, BENCHMARKS, fetchChart, findSymbol, loadMarketData, loadQuotes, needsRefresh, quotesStale } from '../src/market/yahoo';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -208,7 +208,7 @@ async function main() {
     const currentStored = { raw: { positions: [{ quantity: { value: '2' } }], transactions: fresh }, fetchedAt: '2026-11-07T10:00:00.000Z', snapshots: [{ date: '2026-11-07', prices: { X: 110 } }] };
     const roundTrip = parseBackup(serializeBackup(backupStored, '2026-06-03T11:00:00.000Z'));
     check('Sicherung: Datei hin und zurück', JSON.stringify(roundTrip) === JSON.stringify(backupStored));
-    const settings = { goal: 100000, assumedReturn: 0.065, savingsMarks: ['IE00B4L5Y983'], targetShares: { IE00B4L5Y983: 0.7, US0378331005: 0.3 }, withdrawal: { monthly: 1500, years: 30 } };
+    const settings = { goal: 100000, assumedReturn: 0.065, savingsMarks: ['IE00B4L5Y983'], targetShares: { IE00B4L5Y983: 0.7, US0378331005: 0.3 }, withdrawal: { monthly: 1500, years: 30 }, notes: { IE00B4L5Y983: 'Weltweit gestreut, Basis des Depots' } };
     const withSettings = serializeBackup(backupStored, 'x', settings);
     check('Sicherung: Einstellungen hin und zurück', JSON.stringify(parseBackupSettings(withSettings)) === JSON.stringify(settings));
     check('Sicherung: Depotdaten trotz Einstellungen unverändert', JSON.stringify(parseBackup(withSettings)) === JSON.stringify(backupStored));
@@ -218,8 +218,13 @@ async function main() {
     );
     check('Sicherung: unsinnige Einstellungen werden verworfen', odd.goal === null && odd.assumedReturn === null && odd.savingsMarks.join() === 'A' && JSON.stringify(odd.targetShares) === '{"A":0.6}' && odd.withdrawal === null);
     const mergedSettings = mergeSettings(
-      { goal: 50000, assumedReturn: null, savingsMarks: ['A'], targetShares: {}, withdrawal: null },
-      { goal: 100000, assumedReturn: 0.07, savingsMarks: ['A', 'B'], targetShares: { A: 1 }, withdrawal: { monthly: 2000, years: 25 } },
+      { goal: 50000, assumedReturn: null, savingsMarks: ['A'], targetShares: {}, withdrawal: null, notes: { A: 'meine' } },
+      { goal: 100000, assumedReturn: 0.07, savingsMarks: ['A', 'B'], targetShares: { A: 1 }, withdrawal: { monthly: 2000, years: 25 }, notes: { A: 'alte', B: 'aus Sicherung' } },
+    );
+    check('Sicherung: eigene Notiz bleibt, fehlende kommt aus der Sicherung', mergedSettings.notes.A === 'meine' && mergedSettings.notes.B === 'aus Sicherung');
+    check(
+      'Sicherung: leere oder kaputte Notizen werden verworfen',
+      JSON.stringify(parseBackupSettings(JSON.stringify({ app: 'depot-tracker', version: 1, settings: { notes: { A: 'gut', B: '   ', C: 5 } } })).notes) === '{"A":"gut"}',
     );
     check('Sicherung: fehlende Wunsch-Entnahme kommt aus der Sicherung', mergedSettings.withdrawal?.monthly === 2000 && mergedSettings.withdrawal.years === 25);
     check(
@@ -293,12 +298,17 @@ async function main() {
     };
 
     check('Yahoo: Euro-Börse bevorzugt', (await findSymbol(yahoo, 'IE1')) === 'X.DE');
-    const market = await loadMarketData(yahoo, { US1: 92, GB1: 60, IE1: 110, BAD1: 100, NONE: 5 }, new Date('2026-11-04T10:00:00Z'));
+    const market = await loadMarketData(yahoo, { US1: 92, GB1: 60, IE1: 110, BAD1: 100, NONE: 5 }, BENCHMARK, new Date('2026-11-04T10:00:00Z'));
     check('Yahoo: Dollar in Euro umgerechnet', market.series.US1?.[0].price === 90, String(market.series.US1?.[0].price));
     check('Yahoo: Pence in Euro umgerechnet', Math.abs((market.series.GB1?.at(-1)?.price ?? 0) - 60) < 1e-9);
     check('Yahoo: Lücken übersprungen', market.series.IE1?.length === 2);
     check('Yahoo: falsches Papier verworfen', !market.series.BAD1 && !market.series.NONE);
     check('Yahoo: MSCI World geladen', market.benchmark?.length === 3);
+    check('Yahoo: gewählter Index wird gemerkt', market.benchmarkKey === BENCHMARK.key);
+    const sp500 = BENCHMARKS.find((b) => b.name === 'S&P 500')!;
+    charts[sp500.symbol] = chart('EUR', [['2025-01-06', 50], ['2026-11-02', 70]]);
+    const switched = await loadMarketData(yahoo, { US1: 92 }, sp500, new Date('2026-11-04T10:00:00Z'));
+    check('Yahoo: anderer Index wird geladen und gemerkt', switched.benchmark?.length === 2 && switched.benchmarkKey === sp500.key);
     check('Yahoo: keine Depotdaten in Anfragen', !urls.some((u) => /92|60|110/.test(new URL(u).search.replace(/quotesCount=10/, ''))));
     check('Yahoo: alle ISINs als abgefragt gemerkt', market.isins.length === 5);
     check('Yahoo: frisch → kein Neuladen', !needsRefresh(market, ['US1'], new Date('2026-11-04T20:00:00Z')));

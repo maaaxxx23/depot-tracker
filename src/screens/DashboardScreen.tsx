@@ -6,7 +6,7 @@ import { mapPortfolio } from '../comdirect/portfolio';
 import { localDate } from '../comdirect/sync';
 import { backupDue, exportBackup, pickHoldings } from '../data/backup';
 import type { FundComposition } from '../data/holdingsImport';
-import { chartModePreference, compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, monthReviewCollapsed, monthReviewDismissed, monthReviewPreference, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
+import { benchmarkPreference, chartModePreference, compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, monthReviewCollapsed, monthReviewDismissed, monthReviewPreference, positionNotes, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
 import { IndustryCache, loadIndustries } from '../market/industries';
 import { refreshMarket } from '../market/refresh';
 import type { MarketData } from '../market/yahoo';
@@ -143,6 +143,15 @@ export function DashboardScreen() {
   const [annualReturn, setAnnualReturn] = useState(DEFAULT_RETURN);
   const [marks, setMarks] = useState<string[]>([]);
   const [targets, setTargets] = useState<TargetShares>({});
+  // Eigene Notiz je Position; leerer Text entfernt den Eintrag
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const saveNote = (isin: string, text: string) => {
+    const next = { ...notes };
+    if (text.trim()) next[isin] = text;
+    else delete next[isin];
+    setNotes(next);
+    positionNotes.set(next).catch(() => {});
+  };
   const [compositions, setCompositions] = useState<Record<string, FundComposition>>({});
   const [industries, setIndustries] = useState<IndustryCache>({});
   const [industriesLoaded, setIndustriesLoaded] = useState(false);
@@ -157,6 +166,7 @@ export function DashboardScreen() {
         if (s.assumedReturn !== null) setAnnualReturn(s.assumedReturn);
         setMarks(s.savingsMarks);
         setTargets(s.targetShares);
+        setNotes(s.notes);
       })
       .catch(() => {});
 
@@ -179,6 +189,7 @@ export function DashboardScreen() {
     monthReviewPreference.get().then(setReviewEnabled).catch(() => {});
     monthReviewDismissed.get().then(setDismissedReview).catch(() => {});
     monthReviewCollapsed.get().then(setCollapsedReview).catch(() => {});
+    benchmarkPreference.get().then(setBenchmarkKey).catch(() => {});
     compositionStore.get().then(setCompositions).catch(() => {});
     industryStore
       .get()
@@ -255,6 +266,15 @@ export function DashboardScreen() {
   const allocation = useMemo(() => analyzeAllocation(positions, targets), [positions, targets]);
   const insights = useMemo(() => buildInsights(data, positions, goal !== null, allocation), [data, positions, goal, allocation]);
   const review = useMemo(() => reviewToShow(data), [data]);
+  // Vergleichsindex: Wechsel löst einen frischen Yahoo-Abruf aus (über den tick-Effekt)
+  const [benchmarkKey, setBenchmarkKey] = useState('BENCHMARK:MSCI-WORLD');
+  const changeBenchmark = (key: string) => {
+    setBenchmarkKey(key);
+    benchmarkPreference
+      .set(key)
+      .then(() => setTick((t) => t + 1))
+      .catch(() => {});
+  };
   // Monats-Rückblick: generell abschaltbar, einzelne Monate per Kreuz ausblendbar oder einklappbar
   const [reviewEnabled, setReviewEnabled] = useState(true);
   const [dismissedReview, setDismissedReview] = useState<string | null>(null);
@@ -543,6 +563,9 @@ export function DashboardScreen() {
           benchmark={result.benchmark}
           name={data.benchmark.name}
           periodLabel={`Zeitraum: ${period.long}`}
+          // Bei Demo-Daten gibt es keine Auswahl: dort ist der Vergleich Teil der Beispieldaten
+          choiceKey={data.source.kind === 'comdirect' ? benchmarkKey : undefined}
+          onChoose={data.source.kind === 'comdirect' ? changeBenchmark : undefined}
         />
       )}
       {visit.banner && (
@@ -677,6 +700,8 @@ export function DashboardScreen() {
         color={positionColor(theme, selectedIndex)}
         bankCost={selected && data.costBasis ? data.costBasis[selected.instrument.isin] ?? null : null}
         prepaidTax={selected && data.prepaidTax ? data.prepaidTax[selected.instrument.isin] ?? null : null}
+        note={selected ? notes[selected.instrument.isin] ?? '' : ''}
+        onNoteChange={(text) => selected && saveNote(selected.instrument.isin, text)}
         plan={selected ? planStatus(savings, selected.instrument.isin) : { kind: 'none' }}
         onMarkPlan={(marked) => {
           if (!selected) return;

@@ -38,6 +38,8 @@ const PREFERENCES = {
   monthReview: 'month-review-v1',
   monthReviewDismissed: 'month-review-dismissed-v1',
   monthReviewCollapsed: 'month-review-collapsed-v1',
+  benchmark: 'benchmark-v1',
+  notes: 'position-notes-v1',
 };
 
 const MAX_SNAPSHOTS = 2000;
@@ -187,6 +189,18 @@ export const monthReviewCollapsed = {
   set: (month: string | null) => AsyncStorage.setItem(PREFERENCES.monthReviewCollapsed, JSON.stringify(month)),
 };
 
+/** Gewählter Vergleichsindex (Schlüssel aus BENCHMARKS); Vorgabe MSCI World. */
+export const benchmarkPreference = {
+  get: () => readJson<string>(PREFERENCES.benchmark, 'BENCHMARK:MSCI-WORLD'),
+  set: (key: string) => AsyncStorage.setItem(PREFERENCES.benchmark, JSON.stringify(key)),
+};
+
+/** Eigene Notiz je Position (ISIN → Text); kommt mit in die Sicherung. */
+export const positionNotes = {
+  get: () => readJson<Record<string, string>>(PREFERENCES.notes, {}),
+  set: (notes: Record<string, string>) => AsyncStorage.setItem(PREFERENCES.notes, JSON.stringify(notes)),
+};
+
 /** Darstellung: dem System folgen oder fest hell bzw. dunkel. */
 export type AppearanceMode = 'system' | 'light' | 'dark';
 
@@ -214,14 +228,15 @@ export async function saveLists(lists: BackupLists): Promise<void> {
 
 /** Alle persönlichen Einstellungen auf einmal, für Sichern und Wiederherstellen. */
 export async function loadSettings(): Promise<BackupSettings> {
-  const [goal, assumedReturn, marks, targetShares, withdrawal] = await Promise.all([
+  const [goal, assumedReturn, marks, targetShares, withdrawal, notes] = await Promise.all([
     goalPreference.get(),
     assumedReturnPreference.get(),
     savingsMarks.get(),
     targetSharesPreference.get(),
     withdrawalPreference.get(),
+    positionNotes.get(),
   ]);
-  return { goal, assumedReturn, savingsMarks: marks, targetShares, withdrawal };
+  return { goal, assumedReturn, savingsMarks: marks, targetShares, withdrawal, notes };
 }
 
 export async function saveSettings(settings: BackupSettings): Promise<void> {
@@ -230,6 +245,7 @@ export async function saveSettings(settings: BackupSettings): Promise<void> {
   await savingsMarks.set(settings.savingsMarks);
   await targetSharesPreference.set(settings.targetShares);
   await withdrawalPreference.set(settings.withdrawal);
+  await positionNotes.set(settings.notes);
 }
 
 export async function clearStored(): Promise<void> {

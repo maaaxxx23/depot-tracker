@@ -1,4 +1,5 @@
-import { Switch, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Switch, Text, TextInput, View } from 'react-native';
 import { PositionResult } from '../../finance/performance';
 import type { PlanStatus } from '../../finance/savings';
 import { dayMonth, eur, monthYear, pct, percent, price, quantity, signedEur } from '../format';
@@ -16,14 +17,21 @@ interface Props {
   bankCost: number | null;
   /** Bisher bezahlte Steuer auf die Vorabpauschale; null = keine bekannt */
   prepaidTax: number | null;
+  /** Eigene Notiz zu dieser Position */
+  note: string;
+  onNoteChange: (text: string) => void;
   /** Sparplan-Status dieser Position */
   plan: PlanStatus;
   onMarkPlan: (marked: boolean) => void;
   onClose: () => void;
 }
 
-export function PositionSheet({ position, color, bankCost, prepaidTax, plan, onMarkPlan, onClose }: Props) {
+export function PositionSheet({ position, color, bankCost, prepaidTax, note, onNoteChange, plan, onMarkPlan, onClose }: Props) {
   const { theme, styles } = useStyles();
+  // Eigener Entwurf während des Tippens; beim Wechsel der Position neu übernehmen
+  const [draft, setDraft] = useState(note);
+  const isin = position?.instrument.isin;
+  useEffect(() => setDraft(note), [isin]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!position) return null;
   const p = position;
   const gainStyle = [styles.number, { fontSize: font.button, fontWeight: '600' as const, color: signColor(theme, p.irr) }];
@@ -91,6 +99,35 @@ export function PositionSheet({ position, color, bankCost, prepaidTax, plan, onM
             : []),
         ]}
       />
+
+      {/* Eigene Notiz: z. B. warum gekauft wurde – hilfreich, wenn die Kurse mal fallen */}
+      <View style={[styles.card, { gap: 6 }]}>
+        <Text style={[styles.text, { fontWeight: '600' }]}>Deine Notiz</Text>
+        <TextInput
+          value={draft}
+          onChangeText={(text) => {
+            setDraft(text);
+            onNoteChange(text);
+          }}
+          multiline
+          placeholder="Warum hast du diese Position gekauft? Dein zukünftiges Ich liest hier nach."
+          placeholderTextColor={theme.muted}
+          accessibilityLabel="Notiz zu dieser Position"
+          style={{
+            backgroundColor: theme.background,
+            color: theme.text,
+            borderRadius: radius.control,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            paddingTop: 10,
+            fontSize: font.body,
+            lineHeight: 20,
+            minHeight: 64,
+            textAlignVertical: 'top',
+          }}
+        />
+        <Text style={styles.small}>Bleibt auf dem iPhone und kommt mit in die Sicherungsdatei.</Text>
+      </View>
 
       {/* Sparplan: automatisch erkannt oder von dir markiert; die App prüft weiter, ob wirklich gekauft wird */}
       <View style={[styles.card, { gap: 6 }]}>

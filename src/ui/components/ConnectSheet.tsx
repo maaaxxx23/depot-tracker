@@ -12,6 +12,7 @@ import { Sheet } from '../Sheet';
 import { tapFeedback } from '../haptics';
 import { font, radius, useStyles } from '../styles';
 import { InfoDot } from './InfoDot';
+import { SuccessToast } from './SuccessToast';
 
 type TextInputHandle = React.ComponentRef<typeof TextInput>;
 
@@ -156,6 +157,8 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
   };
 
   const [busy, setBusy] = useState(false);
+  // Erfolg zeigt sich als kurze Einblendung statt als Hinweisfenster; Fehler bleiben Hinweisfenster
+  const [toast, setToast] = useState<string | null>(null);
   const backup = async () => {
     setBusy(true);
     try {
@@ -172,7 +175,7 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
       const stored = await importBackup();
       if (!stored) return;
       onRestored(stored);
-      Alert.alert('Wiederhergestellt', `Die Sicherung wurde mit dem aktuellen Stand zusammengeführt (${stored.raw.transactions.length} Umsätze).`);
+      setToast(`Zusammengeführt · ${stored.raw.transactions.length} Umsätze`);
     } catch (e) {
       Alert.alert('Wiederherstellen fehlgeschlagen', e instanceof Error ? e.message : String(e));
     } finally {
@@ -227,6 +230,7 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
           onPress: async () => {
             try {
               onRestored(await applyCsv(preview));
+              setToast(`Übernommen · ${added} neue Umsätze`);
             } catch (e) {
               Alert.alert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
             }
@@ -273,7 +277,13 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
   );
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="comdirect-Zugang" scrollRef={sheetScroll}>
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      title="comdirect-Zugang"
+      scrollRef={sheetScroll}
+      notice={toast ? <SuccessToast message={toast} topInset={2} onDone={() => setToast(null)} /> : undefined}
+    >
       <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4 }]}>Zugangsdaten</Text>
       {setup && !editing ? (
         /* Eingeklappt, solange ein Zugang gespeichert ist: nur Zusammenfassung und Knopf zum Ändern */

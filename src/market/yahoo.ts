@@ -10,8 +10,29 @@ const BASE = 'https://query1.finance.yahoo.com';
 // Ohne Browser-Kennung antwortet Yahoo gelegentlich mit 429
 const HEADERS = { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' };
 
-/** Vergleichsindex: iShares Core MSCI World (thesaurierend, Xetra, EUR), also inkl. Dividenden. */
-export const BENCHMARK = { key: 'BENCHMARK:MSCI-WORLD', symbol: 'EUNL.DE', name: 'MSCI World' } as const;
+export interface BenchmarkChoice {
+  key: string;
+  symbol: string;
+  name: string;
+}
+
+/**
+ * Wählbare Vergleichsindizes: jeweils ein thesaurierender ETF an einer Euro-Börse,
+ * also inklusive Dividenden und ohne Währungsumrechnung.
+ */
+export const BENCHMARKS: readonly BenchmarkChoice[] = [
+  { key: 'BENCHMARK:MSCI-WORLD', symbol: 'EUNL.DE', name: 'MSCI World' },
+  { key: 'BENCHMARK:SP500', symbol: 'SXR8.DE', name: 'S&P 500' },
+  { key: 'BENCHMARK:FTSE-ALL-WORLD', symbol: 'VWCE.DE', name: 'FTSE All-World' },
+  { key: 'BENCHMARK:MSCI-EM', symbol: 'IS3N.DE', name: 'MSCI EM' },
+  { key: 'BENCHMARK:NASDAQ-100', symbol: 'SXRV.DE', name: 'Nasdaq 100' },
+];
+
+/** Vorgabe: MSCI World. */
+export const BENCHMARK = BENCHMARKS[0];
+
+/** Index zu einem gespeicherten Schlüssel; Unbekanntes (auch alte Stände ohne Schlüssel) fällt auf die Vorgabe zurück. */
+export const benchmarkByKey = (key: string | null | undefined): BenchmarkChoice => BENCHMARKS.find((b) => b.key === key) ?? BENCHMARK;
 
 /** Weicht Yahoos letzter Kurs stärker vom comdirect-Kurs ab, ist es vermutlich ein anderes Papier. */
 const MAX_DEVIATION = 0.15;
@@ -30,6 +51,8 @@ export interface MarketData {
   /** Wochenkurse in EUR je ISIN */
   series: Record<string, PricePoint[]>;
   benchmark: PricePoint[] | null;
+  /** Welcher Vergleichsindex geladen wurde; fehlt in alten Ständen (dann MSCI World) */
+  benchmarkKey?: string;
   /** Gefundene Yahoo-Symbole je ISIN (nur für übernommene Kursreihen) */
   symbols?: Record<string, string>;
   /** Aktuelle Kurse, alle 15 Minuten neu */
@@ -126,7 +149,7 @@ async function inEur(fetchImpl: FetchLike, chart: { currency: string; points: Pr
  * Einzelne Fehlschläge werden übersprungen; die App nutzt dann nur die comdirect-Kurse.
  * @param current ISIN → aktueller Kurs laut comdirect (zur Plausibilitätsprüfung)
  */
-export async function loadMarketData(fetchImpl: FetchLike, current: Record<string, number>, now = new Date()): Promise<MarketData> {
+export async function loadMarketData(fetchImpl: FetchLike, current: Record<string, number>, benchmarkChoice: BenchmarkChoice = BENCHMARK, now = new Date()): Promise<MarketData> {
   const series: Record<string, PricePoint[]> = {};
   const symbols: Record<string, string> = {};
   // Nacheinander statt parallel, um Yahoo nicht mit Anfragen zu fluten
@@ -146,12 +169,12 @@ export async function loadMarketData(fetchImpl: FetchLike, current: Record<strin
   }
   let benchmark: PricePoint[] | null = null;
   try {
-    const points = await inEur(fetchImpl, await fetchChart(fetchImpl, BENCHMARK.symbol));
+    const points = await inEur(fetchImpl, await fetchChart(fetchImpl, benchmarkChoice.symbol));
     benchmark = points.length ? points : null;
   } catch {
     benchmark = null;
   }
-  return { fetchedAt: now.toISOString(), isins: Object.keys(current), series, benchmark, symbols };
+  return { fetchedAt: now.toISOString(), isins: Object.keys(current), series, benchmark, benchmarkKey: benchmarkChoice.key, symbols };
 }
 
 /** Wechselkurs in EUR je Währung, pro Abruf nur einmal geladen. */
@@ -188,7 +211,7 @@ export async function loadQuotes(fetchImpl: FetchLike, market: MarketData, now =
     const quote = await toEur(symbol, market.series[isin]);
     if (quote) quotes[isin] = quote;
   }
-  const benchmarkQuote = market.benchmark ? await toEur(BENCHMARK.symbol, market.benchmark) : null;
+  const benchmarkQuote = market.benchmark ? await toEur(benchmarkByKey(market.benchmarkKey).symbol, market.benchmark) : null;
   return { ...market, quotes, benchmarkQuote, quotedAt: now.toISOString() };
 }
 

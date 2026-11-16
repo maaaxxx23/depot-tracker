@@ -2,7 +2,7 @@
 // Das Mapping ist rein (ohne Netzwerk), damit es sich mit Beispiel-JSON testen lässt.
 
 import { Instrument, PortfolioData, PricePoint, PriceHistory, Transaction } from '../types';
-import { BENCHMARK, MarketData, pointAt, Quote } from '../market/yahoo';
+import { benchmarkByKey, MarketData, pointAt, Quote } from '../market/yahoo';
 import { ComdirectApi, ComdirectError } from './api';
 
 interface AmountValue {
@@ -178,7 +178,7 @@ export function mapPortfolio(
   snapshots: Snapshot[],
   asOf: string,
   fetchedAt: string,
-  market?: Pick<MarketData, 'series' | 'benchmark' | 'quotes' | 'benchmarkQuote'> | null,
+  market?: Pick<MarketData, 'series' | 'benchmark' | 'benchmarkKey' | 'quotes' | 'benchmarkQuote'> | null,
 ): PortfolioData {
   // Der CSV-Export kennt nur die WKN: über die Daten der Schnittstelle der ISIN zuordnen
   const isinOfWkn = new Map<string, string>();
@@ -313,15 +313,16 @@ export function mapPortfolio(
     prices[isin] = [...byDate.entries()].map(([date, price]): PricePoint => ({ date, price })).sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  const benchmark = market?.benchmark?.length ? { isin: BENCHMARK.key, name: BENCHMARK.name } : null;
-  if (benchmark) prices[BENCHMARK.key] = withQuote(market!.benchmark!, market?.benchmarkQuote, valuationDay);
+  const choice = benchmarkByKey(market?.benchmarkKey);
+  const benchmark = market?.benchmark?.length ? { isin: choice.key, name: choice.name } : null;
+  if (benchmark) prices[choice.key] = withQuote(market!.benchmark!, market?.benchmarkQuote, valuationDay);
 
   return {
     // Ohne Kurse lässt sich ein Instrument nicht bewerten
     instruments: [...instruments.values()].filter((i) => prices[i.isin]?.length),
     transactions: transactions.filter((t) => prices[t.isin]?.length).sort((a, b) => a.date.localeCompare(b.date)),
     prices,
-    benchmark: benchmark && prices[BENCHMARK.key].length ? benchmark : null,
+    benchmark: benchmark && prices[choice.key].length ? benchmark : null,
     asOf: valuationDay,
     costBasis,
     prepaidTax,
