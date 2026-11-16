@@ -37,6 +37,7 @@ const PREFERENCES = {
   welcome: 'welcome-seen-v1',
   monthReview: 'month-review-v1',
   monthReviewDismissed: 'month-review-dismissed-v1',
+  monthReviewCollapsed: 'month-review-collapsed-v1',
 };
 
 const MAX_SNAPSHOTS = 2000;
@@ -178,6 +179,12 @@ export const monthReviewPreference = {
 export const monthReviewDismissed = {
   get: () => readJson<string | null>(PREFERENCES.monthReviewDismissed, null),
   set: (month: string | null) => AsyncStorage.setItem(PREFERENCES.monthReviewDismissed, JSON.stringify(month)),
+};
+
+/** Monat (YYYY-MM), dessen Rückblick auf eine Zeile eingeklappt wurde; mit + wieder aufklappbar. */
+export const monthReviewCollapsed = {
+  get: () => readJson<string | null>(PREFERENCES.monthReviewCollapsed, null),
+  set: (month: string | null) => AsyncStorage.setItem(PREFERENCES.monthReviewCollapsed, JSON.stringify(month)),
 };
 
 /** Darstellung: dem System folgen oder fest hell bzw. dunkel. */

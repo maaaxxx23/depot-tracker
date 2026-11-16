@@ -60,7 +60,7 @@ export const GUIDE: GuideSection[] = [
       '• Beim Öffnen nach mindestens einer Stunde Pause zeigt ein Banner oben kurz, wie sich dein Depot seit deinem letzten Besuch bewegt hat. Langes Drücken auf den Depotwert zeigt es jederzeit.',
       '• Darunter: Gewinn in Euro und die Rendite pro Jahr (p.a.) im gewählten Zeitraum. Sie berücksichtigt, wann du wie viel eingezahlt hast.',
       '• „seit Kauf“: genau die Zahl, die auch die comdirect-App zeigt (heutiger Wert minus Einstandswert).',
-      '• Rückblick: in den ersten Tagen eines Monats eine kleine Karte zum Vormonat – was du eingezahlt hast, was die Kurse gemacht haben und die Veränderung insgesamt. Das ✕ blendet sie bis zum nächsten Monat aus; ganz aus- und einschalten lässt sich der Rückblick unter „Zugang verwalten“ → „Darstellung“.',
+      '• Rückblick: in den ersten Tagen eines Monats eine kleine Karte zum Vormonat – was du eingezahlt hast, was die Kurse gemacht haben und die Veränderung insgesamt. Das ✕ fragt, ob die Karte nur auf eine Zeile eingeklappt (mit + wieder aufklappbar) oder bis zum nächsten Monat ausgeblendet werden soll; ganz aus- und einschalten lässt sich der Rückblick unter „Zugang verwalten“ → „Darstellung“.',
       '• Hinweise: z. B. ein Rücksetzer gegenüber dem Höchststand, Gebühren, Meilensteine oder ein zu großes Gewicht einzelner Aktien.',
       '• Sparen & Ziel: deine Sparrate und der Fortschritt zu deinem Wunschbetrag. Antippen zeigt Details, auch was du dieses Jahr eingezahlt hast.',
       '• Positionen: Aufteilung als Balken und jede Position mit Wert und Rendite. Antippen öffnet die Details. Über „Zielaufteilung“ legst du Wunschanteile fest.',
