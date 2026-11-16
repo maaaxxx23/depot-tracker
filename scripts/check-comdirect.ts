@@ -286,7 +286,9 @@ async function main() {
       asOf: '2026-11-16',
       source: { kind: 'comdirect', fetchedAt: '2026-11-16T10:00:00.000Z' },
     };
-    const lines = buildTransactionsCsv(data).split('\n');
+    const csv = buildTransactionsCsv(data);
+    check('Bericht: CSV beginnt mit BOM für Excel', csv.startsWith('﻿'));
+    const lines = csv.slice(1).split('\n');
     check('Bericht: CSV-Kopf', lines[0] === 'Datum;Typ;Wertpapier;ISIN;Stück;Betrag in EUR;Gebühren in EUR', lines[0]);
     check('Bericht: CSV sortiert, Name mit Semikolon in Anführungszeichen', lines[1] === '2026-01-01;Ausschüttung;"Welt; ""ETF""";IE1;0;10,00;0,00', lines[1]);
     check('Bericht: CSV Kauf mit Dezimalkomma', lines[2] === '2026-02-01;Kauf;"Welt; ""ETF""";IE1;1,5;150,50;1,90', lines[2]);
@@ -294,12 +296,27 @@ async function main() {
       years: [{ year: 2026, running: true, startValue: 1000, endValue: 1200, bought: 150, sold: 0, dividends: 10, realized: 0, gain: 60, twr: 0.05, benchmarkReturn: 0.04 }],
       total: { open: 50, realized: 0, dividends: 10, gain: 60 },
     };
-    const html = buildYearReportHtml(data, overview, 'MSCI World', new Date(2026, 10, 16, 12));
+    const position = {
+      instrument: { isin: 'IE1', name: 'Welt <&> ETF', shortName: 'Welt', kind: 'ETF' as const },
+      quantity: 10,
+      price: 120,
+      value: 1200,
+      share: 1,
+      gain: 200,
+      irr: 0.05,
+      dividends: 0,
+      fees: 2,
+      realized: null,
+      series: [],
+    };
+    const html = buildYearReportHtml(data, overview, 'MSCI World', [position], new Date(2026, 10, 16, 12));
     check('Bericht: laufendes Jahr als „bisher“', html.includes('2026 (bisher)'));
     check('Bericht: Vergleichsindex in der Tabelle', html.includes('MSCI World'));
+    check('Bericht: Position escaped in der Tabelle', html.includes('Welt &lt;&amp;&gt; ETF'));
     check('Bericht: Erstellt-Datum', html.includes('16.11.2026'));
     check('Bericht: kein NaN oder undefined', !/NaN|undefined/.test(html));
     check('Bericht: Verkäufe ohne Wert als Strich', html.includes('<td>–</td>'));
+    check('Bericht: ohne Positionen keine Positions-Tabelle', !buildYearReportHtml(data, overview, null).includes('Positionen heute'));
   }
 
   // --- Kurshistorie von Yahoo (nachgebaut) ---

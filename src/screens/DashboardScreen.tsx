@@ -649,7 +649,7 @@ export function DashboardScreen() {
           goalPreference.set(next).catch(() => {});
         }}
       />
-      <YearSheet visible={sheet === 'years'} onClose={() => setSheet(null)} overview={years} data={data} benchmarkName={data.benchmark?.name ?? null} vorab={vorab} />
+      <YearSheet visible={sheet === 'years'} onClose={() => setSheet(null)} overview={years} data={data} positions={positions} benchmarkName={data.benchmark?.name ?? null} vorab={vorab} />
       <ConnectSheet
         visible={sheet === 'connect'}
         setup={setup}

@@ -2,9 +2,10 @@
 // und alle gesammelten Umsätze als CSV. Reine Textbausteine ohne Geräte-Zugriff,
 // damit sie in den Skripten testbar sind.
 
+import type { PositionResult } from '../finance/performance';
 import type { YearsOverview } from '../finance/years';
 import type { PortfolioData } from '../types';
-import { eur, pct, signedEur } from '../ui/format';
+import { eur, pct, percent, quantity, signedEur } from '../ui/format';
 
 /** Deutsches Dezimalkomma mit zwei Nachkommastellen, ohne Tausendertrennung (CSV-tauglich). */
 const num = (n: number) => n.toFixed(2).replace('.', ',');
@@ -20,7 +21,8 @@ export function buildTransactionsCsv(data: PortfolioData): string {
   const rows = [...data.transactions]
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((t) => [t.date, TYPE_LABEL[t.type], field(name(t.isin)), t.isin, qty(t.quantity), num(t.amount), num(t.fees)].join(';'));
-  return ['Datum;Typ;Wertpapier;ISIN;Stück;Betrag in EUR;Gebühren in EUR', ...rows].join('\n');
+  // Das BOM sorgt dafür, dass Excel unter Windows die Umlaute richtig liest
+  return '﻿' + ['Datum;Typ;Wertpapier;ISIN;Stück;Betrag in EUR;Gebühren in EUR', ...rows].join('\n');
 }
 
 const css = `
@@ -40,9 +42,11 @@ const signed = (n: number) => `<span class="${n >= 0 ? 'plus' : 'minus'}">${sign
 const dash = (n: number, render: (v: number) => string) => (Math.abs(n) < 0.005 ? '–' : render(n));
 const day = (d: Date) => `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
 const dayIso = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
+/** Wertpapiernamen kommen von der Bank und gehören escaped ins HTML. */
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** Die Jahresübersicht als druckbare HTML-Seite; expo-print macht daraus das PDF. */
-export function buildYearReportHtml(data: PortfolioData, overview: YearsOverview, benchmarkName: string | null, createdAt = new Date()): string {
+export function buildYearReportHtml(data: PortfolioData, overview: YearsOverview, benchmarkName: string | null, positions: PositionResult[] = [], createdAt = new Date()): string {
   const { years, total } = overview;
   const current = years.find((y) => y.running)?.endValue ?? 0;
   const header = ['Jahr', 'Rendite', ...(benchmarkName ? [benchmarkName] : []), 'Gewinn', 'Gekauft', 'Verkauft', 'Ausschüttungen', 'Wert Ende'];
@@ -72,6 +76,15 @@ export function buildYearReportHtml(data: PortfolioData, overview: YearsOverview
       <tr><td>davon realisiert (vor Steuern)</td><td>${dash(total.realized, signed)}</td></tr>
       <tr><td>davon Ausschüttungen (netto)</td><td>${dash(total.dividends, eur)}</td></tr>
     </table>
+    ${
+      positions.length
+        ? `<h2>Positionen heute</h2>
+    <table>
+      <tr><th>Wertpapier</th><th>Stück</th><th>Wert</th><th>Anteil</th></tr>
+      ${positions.map((p) => `<tr><td>${esc(p.instrument.name)}</td><td>${quantity(p.quantity)}</td><td>${eur(p.value)}</td><td>${percent(p.share)}</td></tr>`).join('\n')}
+    </table>`
+        : ''
+    }
     <h2>Jahre</h2>
     <table>
       <tr>${header.map((h) => `<th>${h}</th>`).join('')}</tr>

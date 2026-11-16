@@ -2,6 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import type { PositionResult } from '../finance/performance';
 import type { YearsOverview } from '../finance/years';
 import type { PortfolioData } from '../types';
 import { mergeLists, mergeSettings, mergeStored, parseBackup, parseBackupLists, parseBackupSettings, serializeBackup, StoredPortfolio } from './backupFormat';
@@ -51,8 +52,8 @@ async function shareFile(file: File, options: Parameters<typeof Sharing.shareAsy
 }
 
 /** Erzeugt den Jahresbericht als PDF und öffnet das Teilen-Menü. */
-export async function shareYearReport(data: PortfolioData, overview: YearsOverview, benchmarkName: string | null): Promise<void> {
-  const { uri } = await Print.printToFileAsync({ html: buildYearReportHtml(data, overview, benchmarkName) });
+export async function shareYearReport(data: PortfolioData, overview: YearsOverview, benchmarkName: string | null, positions: PositionResult[]): Promise<void> {
+  const { uri } = await Print.printToFileAsync({ html: buildYearReportHtml(data, overview, benchmarkName, positions) });
   let file = new File(uri);
   // Hübscher Dateiname statt des technischen; klappt das Umbenennen nicht, wird trotzdem geteilt
   try {

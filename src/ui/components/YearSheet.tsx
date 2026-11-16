@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { shareTransactionsCsv, shareYearReport } from '../../data/backup';
+import type { PositionResult } from '../../finance/performance';
 import type { PauschaleEstimate } from '../../finance/vorabpauschale';
 import type { YearsOverview } from '../../finance/years';
 import type { PortfolioData } from '../../types';
@@ -17,6 +18,8 @@ interface Props {
   overview: YearsOverview;
   /** Für die Exporte: Umsätze und Stand */
   data: PortfolioData;
+  /** Für die Positionen-Tabelle im PDF-Bericht */
+  positions: PositionResult[];
   /** Name des Vergleichsindex; null, wenn es keinen gibt */
   benchmarkName: string | null;
   /** Vorschau auf die Vorabpauschale des relevanten Jahres; null = nicht berechenbar */
@@ -24,7 +27,7 @@ interface Props {
 }
 
 /** Gewinn seit Beginn, aufgeteilt in Buchgewinn, realisiert und Ausschüttungen, dazu jedes Jahr einzeln. */
-export function YearSheet({ visible, onClose, overview, data, benchmarkName, vorab }: Props) {
+export function YearSheet({ visible, onClose, overview, data, positions, benchmarkName, vorab }: Props) {
   const { theme, styles } = useStyles();
   const { years, total } = overview;
 
@@ -101,7 +104,7 @@ export function YearSheet({ visible, onClose, overview, data, benchmarkName, vor
 
       {/* Exporte über das Teilen-Menü, z. B. in Dateien sichern oder verschicken */}
       <View style={[styles.row, { gap: 10, marginTop: 8 }]}>
-        {exportButton('Bericht (PDF)', runExport(() => shareYearReport(data, overview, benchmarkName)))}
+        {exportButton('Bericht (PDF)', runExport(() => shareYearReport(data, overview, benchmarkName, positions)))}
         {exportButton('Umsätze (CSV)', runExport(() => shareTransactionsCsv(data)))}
       </View>
 
