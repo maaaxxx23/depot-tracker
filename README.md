@@ -72,6 +72,7 @@ Beide müssen mit 0 FAIL durchlaufen; sie laufen vor jedem TestFlight-Build.
 | `src/ui/` | Theme (Gold-Akzent, hell/dunkel), AppLock (Face-ID-Sperre + Vorhang-Blickschutz), Privatsphäre-Modus (Weichzeichner), Haptik, Blätter und Karten |
 | `src/screens/DashboardScreen.tsx` | Die eine Seite der App; verdrahtet alles, inkl. Spotlight-Tour |
 | `scripts/` | Testskripte und Starthelfer |
+| `.claude/skills/` | Offizielle Expo-Skills für KI-Werkzeuge (natives UI, Design-System, Animation; aus [expo/skills](https://github.com/expo/skills), MIT) |
 | `DESIGN.md` | Gestaltungsrichtlinien: Farben, Bewegung, Haptik, Text-Stil und die Muster für neue Funktionen |
 | `TESTFLIGHT.md` | Build- und Veröffentlichungsprozess (EAS Build → App Store Connect) |
 
