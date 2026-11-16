@@ -17,7 +17,7 @@ import {
 } from '../../finance/withdrawal';
 import type { PositionResult } from '../../finance/performance';
 import type { Instrument } from '../../types';
-import { dayMonth, eur, monthName, monthYear, pct, percent, shortPercent } from '../format';
+import { compactEur, dayMonth, eur, monthName, monthYear, pct, percent, shortPercent } from '../format';
 import { usePrivacy } from '../privacy';
 import { Sheet } from '../Sheet';
 import { font, radius, useStyles } from '../styles';
@@ -192,7 +192,6 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
     const line = (rate: number) => projectSeries(currentValue, goal, savings.monthlyRate, rate, months);
     return {
       dates,
-      endYear: dates[dates.length - 1].slice(0, 4),
       series: [
         { values: line(projection.weak.rate), color: theme.invested, dashed: true },
         { values: line(projection.strong.rate), color: theme.invested, dashed: true },
@@ -208,17 +207,20 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
     ? [
         { label: 'Erreicht', value: percent(projection.progress) },
         { label: 'Es fehlen noch', value: eur(projection.remaining), private: true },
-        // Bei 0 % Annahme fällt „vorsichtig“ mit „erwartet“ zusammen und entfällt; „stark“ entsprechend am oberen Rand
-        ...(projection.weak.rate < annualReturn
-          ? [{ label: `Vorsichtig (${shortPercent(projection.weak.rate)})`, hint: 'laufen die Jahre schwächer', value: when(projection.weak.month) }]
-          : []),
         {
-          label: `Erwartet (${shortPercent(annualReturn)})`,
+          label: `Mit ${shortPercent(annualReturn)} Rendite im Jahr`,
           hint: 'deine Annahme, kein Versprechen',
           value: when(projection.withReturn),
         },
-        ...(projection.strong.rate > annualReturn
-          ? [{ label: `Stark (${shortPercent(projection.strong.rate)})`, hint: 'laufen die Jahre besser', value: when(projection.strong.month) }]
+        // Eine Zeile statt dreier: die Spanne zwischen starkem und vorsichtigem Szenario
+        ...(projection.remaining > 0 && projection.strong.rate > projection.weak.rate
+          ? [
+              {
+                label: 'Je nach Börsenjahren',
+                hint: `stark (${shortPercent(projection.strong.rate)}) bis vorsichtig (${shortPercent(projection.weak.rate)})`,
+                value: `${projection.strong.month ? monthYear(projection.strong.month) : '> 50 J.'} – ${projection.weak.month ? monthYear(projection.weak.month) : '> 50 J.'}`,
+              },
+            ]
           : []),
         {
           label: 'Ohne Kursgewinne',
@@ -275,11 +277,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Hochrechnung</Text>
           {corridor && (
             <View style={[styles.card, { gap: 6 }]}>
-              <LineChart theme={theme} compact height={110} dates={corridor.dates} series={corridor.series} />
-              <View style={[styles.row, { justifyContent: 'space-between' }]}>
-                <Text style={styles.small}>heute</Text>
-                <Text style={styles.small}>{corridor.endYear}</Text>
-              </View>
+              <LineChart theme={theme} height={150} dates={corridor.dates} series={corridor.series} formatY={compactEur} blurValues={hidden} />
               <Text style={styles.small}>
                 Gold: erwartet ({shortPercent(annualReturn)}) · grau gestrichelt: vorsichtig bis stark. Jede Linie endet, wenn sie den Wunschbetrag erreicht.
               </Text>
