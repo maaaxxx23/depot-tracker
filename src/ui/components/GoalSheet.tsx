@@ -383,8 +383,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           rows={[
             ...planRows,
             ...inactiveRows,
-            // Spielerei: Die Summe läuft durch die Farben der Positionen, aus denen sie besteht
-            { label: 'Zusammen', hint: 'pro Monat', value: eur(savings.monthlyRate), private: true, valueColors: positions.map((_, i) => positionColor(theme, i)) },
+            { label: 'Zusammen', hint: 'pro Monat', value: eur(savings.monthlyRate), private: true, bold: true },
           ]}
         />
       ) : (

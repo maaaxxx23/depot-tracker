@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import { PrivateText, usePrivacy } from '../privacy';
+import { PrivateText } from '../privacy';
 import { useStyles } from '../styles';
 
 export interface DetailRow {
@@ -14,29 +14,11 @@ export interface DetailRow {
   bold?: boolean;
   /** Wert im Privatsphäre-Modus weichzeichnen */
   private?: boolean;
-  /** Spielerei: Der Wert läuft Zeichen für Zeichen durch diese Farben (nicht im Privatsphäre-Modus) */
-  valueColors?: string[];
-}
-
-/** Wert, dessen Zeichen gleichmäßig über die mitgegebenen Farben verlaufen. */
-function RainbowValue({ value, colors, style }: { value: string; colors: string[]; style: object }) {
-  const chars = [...value];
-  const colorAt = (k: number) => colors[Math.min(colors.length - 1, Math.floor((k * colors.length) / Math.max(1, chars.length)))];
-  return (
-    <Text style={style}>
-      {chars.map((ch, k) => (
-        <Text key={k} style={{ color: colorAt(k) }}>
-          {ch}
-        </Text>
-      ))}
-    </Text>
-  );
 }
 
 /** Karte mit Zeilen „Bezeichnung … Wert“. Lange Bezeichnungen brechen um, der Wert bleibt rechts. */
 export function DetailRows({ rows }: { rows: DetailRow[] }) {
   const { theme, styles } = useStyles();
-  const { hidden } = usePrivacy();
   return (
     <View style={[styles.card, { gap: 0, paddingVertical: 4 }]}>
       {rows.map((r, i) => {
@@ -48,9 +30,7 @@ export function DetailRows({ rows }: { rows: DetailRow[] }) {
               {r.hint ? <Text style={styles.small}>{r.hint}</Text> : null}
             </View>
             <View style={{ flexShrink: 0, alignItems: 'flex-end' }}>
-              {r.valueColors && r.valueColors.length > 0 && !hidden ? (
-                <RainbowValue value={r.value} colors={r.valueColors} style={valueStyle} />
-              ) : r.private ? (
+              {r.private ? (
                 <PrivateText containerStyle={{ alignSelf: 'auto' }} style={valueStyle}>
                   {r.value}
                 </PrivateText>
