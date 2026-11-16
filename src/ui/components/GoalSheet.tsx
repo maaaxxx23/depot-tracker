@@ -379,7 +379,14 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
         />
       </View>
       {planRows.length + inactiveRows.length > 0 ? (
-        <DetailRows rows={[...planRows, ...inactiveRows, { label: 'Zusammen', hint: 'pro Monat', value: eur(savings.monthlyRate), private: true }]} />
+        <DetailRows
+          rows={[
+            ...planRows,
+            ...inactiveRows,
+            // Spielerei: Die Summe läuft durch die Farben der Positionen, aus denen sie besteht
+            { label: 'Zusammen', hint: 'pro Monat', value: eur(savings.monthlyRate), private: true, valueColors: positions.map((_, i) => positionColor(theme, i)) },
+          ]}
+        />
       ) : (
         <View style={styles.card}>
           <Text style={[styles.text, { color: theme.muted }]}>Keine regelmäßigen Käufe erkannt. Die Hochrechnung rechnet deshalb ohne Sparrate.</Text>
@@ -393,8 +400,7 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
             hint: 'alle Käufe zusammen, auch Einzelkäufe',
             value: eur(savings.investedThisYear),
             private: true,
-            // Spielerei: Der Betrag läuft durch die Farben deiner Positionen
-            valueColors: positions.map((_, i) => positionColor(theme, i)),
+            bold: true,
           },
         ]}
       />

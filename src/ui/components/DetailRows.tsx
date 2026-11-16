@@ -10,6 +10,8 @@ export interface DetailRow {
   color?: string;
   /** Farbe der Bezeichnung, z. B. die Positionsfarbe des Wertpapiers */
   labelColor?: string;
+  /** Wert kräftiger als üblich, z. B. für Summen */
+  bold?: boolean;
   /** Wert im Privatsphäre-Modus weichzeichnen */
   private?: boolean;
   /** Spielerei: Der Wert läuft Zeichen für Zeichen durch diese Farben (nicht im Privatsphäre-Modus) */
@@ -38,7 +40,7 @@ export function DetailRows({ rows }: { rows: DetailRow[] }) {
   return (
     <View style={[styles.card, { gap: 0, paddingVertical: 4 }]}>
       {rows.map((r, i) => {
-        const valueStyle = [styles.text, styles.number, { fontWeight: '600' as const, color: r.color ?? theme.text }];
+        const valueStyle = [styles.text, styles.number, { fontWeight: (r.bold ? '700' : '600') as '600' | '700', color: r.color ?? theme.text }];
         return (
           <View key={r.label} style={[styles.row, { justifyContent: 'space-between', paddingVertical: 12, gap: 12 }, i > 0 && styles.divider]}>
             <View style={{ flex: 1, flexShrink: 1, gap: 2 }}>
