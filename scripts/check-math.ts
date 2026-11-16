@@ -217,6 +217,13 @@ check(
   check('Ziel: Fortschritt', proj.progress, 0.5);
   check('Ziel: Monat ohne Kursgewinne', proj.withoutReturn === '2027-09' ? 1 : 0, 1);
   check('Ziel: mit Rendite nicht später', proj.withReturn! <= proj.withoutReturn! ? 1 : 0, 1);
+  // Was-wäre-wenn: ±3 Punkte um die Annahme, begrenzt auf 0 bis MAX_RETURN
+  check('Ziel: vorsichtig = Annahme − 3 Punkte', proj.weak.rate, 0.02);
+  check('Ziel: stark = Annahme + 3 Punkte', proj.strong.rate, 0.08);
+  check('Ziel: vorsichtig nicht früher, stark nicht später', proj.weak.month! >= proj.withReturn! && proj.strong.month! <= proj.withReturn! ? 1 : 0, 1);
+  check('Ziel: vorsichtig stoppt bei 0 %', projectGoal(1000, 2000, 100, '2026-11-04', 0.02).weak.rate, 0);
+  check('Ziel: stark stoppt bei der Obergrenze', projectGoal(1000, 2000, 100, '2026-11-04', 0.11).strong.rate, 0.12);
+  check('Ziel: 0 % vorsichtig = ohne Kursgewinne', projectGoal(1000, 2000, 100, '2026-11-04', 0.03).weak.month === proj.withoutReturn ? 1 : 0, 1);
 }
 
 // Entnahme-Modellrechnung

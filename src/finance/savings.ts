@@ -139,6 +139,17 @@ export function monthsToGoal(value: number, goal: number, monthlyRate: number, a
   return null;
 }
 
+/** Abstand der Was-wäre-wenn-Szenarien zur angenommenen Rendite, in Punkten pro Jahr. */
+export const SCENARIO_SPREAD = 0.03;
+
+/** Ein Was-wäre-wenn-Szenario der Hochrechnung. */
+export interface GoalScenario {
+  /** Rendite pro Jahr, mit der gerechnet wurde */
+  rate: number;
+  /** Erwarteter Monat (YYYY-MM); null = nicht innerhalb von 50 Jahren */
+  month: string | null;
+}
+
 export interface GoalProjection {
   /** Anteil des Ziels, der erreicht ist (höchstens 1) */
   progress: number;
@@ -149,15 +160,21 @@ export interface GoalProjection {
   withReturn: string | null;
   /** Erwarteter Monat nur durch Einzahlungen, ohne Kursgewinne; null = ohne Sparrate nicht erreichbar */
   withoutReturn: string | null;
+  /** Was-wäre-wenn: dieselbe Rechnung mit schwächerer bzw. stärkerer Rendite (±SCENARIO_SPREAD, begrenzt auf 0..MAX_RETURN) */
+  weak: GoalScenario;
+  strong: GoalScenario;
 }
 
 export function projectGoal(value: number, goal: number, monthlyRate: number, asOf: string, annualReturn = DEFAULT_RETURN): GoalProjection {
   const month = (n: number | null) => (n === null ? null : monthBefore(asOf, -n));
+  const scenario = (rate: number): GoalScenario => ({ rate, month: month(monthsToGoal(value, goal, monthlyRate, rate)) });
   return {
     progress: goal > 0 ? Math.min(1, Math.max(0, value / goal)) : 0,
     remaining: Math.max(0, goal - value),
     annualReturn,
     withReturn: month(monthsToGoal(value, goal, monthlyRate, annualReturn)),
     withoutReturn: month(monthsToGoal(value, goal, monthlyRate, 0)),
+    weak: scenario(Math.max(0, annualReturn - SCENARIO_SPREAD)),
+    strong: scenario(Math.min(MAX_RETURN, annualReturn + SCENARIO_SPREAD)),
   };
 }

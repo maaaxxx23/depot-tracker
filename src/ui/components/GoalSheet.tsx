@@ -177,20 +177,28 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
       <Ionicons name={icon} size={22} color={theme.text} />
     </Pressable>
   );
-  const none = '–';
+  // Was-wäre-wenn: ein Monat je Szenario; „erreicht“, sobald das Ziel schon steht
+  const when = (month: string | null) => (projection && projection.remaining <= 0 ? 'erreicht' : month ? monthName(month) : 'über 50 Jahre');
   const projectionRows: DetailRow[] = projection
     ? [
         { label: 'Erreicht', value: percent(projection.progress) },
         { label: 'Es fehlen noch', value: eur(projection.remaining), private: true },
+        // Bei 0 % Annahme fällt „vorsichtig“ mit „erwartet“ zusammen und entfällt; „stark“ entsprechend am oberen Rand
+        ...(projection.weak.rate < annualReturn
+          ? [{ label: `Vorsichtig (${shortPercent(projection.weak.rate)})`, hint: 'laufen die Jahre schwächer', value: when(projection.weak.month) }]
+          : []),
         {
-          label: `Mit ${shortPercent(annualReturn)} Rendite im Jahr`,
+          label: `Erwartet (${shortPercent(annualReturn)})`,
           hint: 'deine Annahme, kein Versprechen',
-          value: projection.remaining <= 0 ? 'erreicht' : projection.withReturn ? monthName(projection.withReturn) : 'über 50 Jahre',
+          value: when(projection.withReturn),
         },
+        ...(projection.strong.rate > annualReturn
+          ? [{ label: `Stark (${shortPercent(projection.strong.rate)})`, hint: 'laufen die Jahre besser', value: when(projection.strong.month) }]
+          : []),
         {
           label: 'Ohne Kursgewinne',
           hint: 'nur durch deine Sparrate',
-          value: projection.remaining <= 0 ? 'erreicht' : projection.withoutReturn ? monthName(projection.withoutReturn) : none,
+          value: projection.remaining <= 0 ? 'erreicht' : projection.withoutReturn ? monthName(projection.withoutReturn) : '–',
         },
       ]
     : [];
