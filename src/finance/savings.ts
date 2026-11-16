@@ -155,14 +155,15 @@ export interface GoalProjection {
 export const CORRIDOR_MAX_MONTHS = 300;
 
 /**
- * Monatliche Verlaufspunkte der Hochrechnung, am Ziel gedeckelt: Die Linie steigt
- * und wird am Wunschbetrag flach – so sieht man im Diagramm, wann sie ankommt.
+ * Monatliche Verlaufspunkte der Hochrechnung. Die Linie endet, sobald sie den
+ * Wunschbetrag erreicht – so zeigt ihr Endpunkt im Diagramm den Ankunftszeitpunkt,
+ * statt als flache Punktreihe weiterzulaufen.
  */
 export function projectSeries(value: number, goal: number, monthlyRate: number, annualReturn: number, months: number): number[] {
   const growth = Math.pow(1 + annualReturn, 1 / 12);
   const points = [Math.min(value, goal)];
   let v = value;
-  for (let m = 1; m <= months; m++) {
+  for (let m = 1; m <= months && points[points.length - 1] < goal; m++) {
     v = v * growth + monthlyRate;
     points.push(Math.min(v, goal));
   }

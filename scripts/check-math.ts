@@ -232,7 +232,8 @@ check(
   check('Korridor: Start heute', corridorSeries[0], 1000);
   check('Korridor: ohne Rendite wächst um die Rate', corridorSeries[5], 1500);
   check('Korridor: am Ziel gedeckelt', Math.max(...corridorSeries), 2000);
-  check('Korridor: Länge = Monate + 1', corridorSeries.length, 13);
+  check('Korridor: Linie endet am Ziel statt flach weiterzulaufen', corridorSeries.length, 11);
+  check('Korridor: ohne Ankunft volle Länge', projectSeries(1000, 1_000_000, 0, 0, 12).length, 13);
   check('Korridor: Zeitraum endet mit der langsamsten Linie', corridorMonths(1000, 5000, 100, [0.05, 0.02]), monthsToGoal(1000, 5000, 100, 0.02)!);
   check('Korridor: mindestens ein Jahr', corridorMonths(1000, 1100, 100, [0.05]), 12);
   check('Korridor: Unerreichbares wird auf 25 Jahre begrenzt', corridorMonths(1000, 10_000_000, 0, [0.03]), 300);
