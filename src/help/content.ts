@@ -140,6 +140,7 @@ export const GUIDE: GuideSection[] = [
       '• Ausschüttungen: was dir netto gutgeschrieben wurde.',
       'Darunter steht jedes Kalenderjahr einzeln: Rendite, Vergleich mit dem MSCI World, Gewinn, Käufe, Verkäufe, Ausschüttungen und der Wert am Jahresende. Das laufende Jahr ist mit „bisher“ gekennzeichnet.',
       'Hast du aus einer Position schon verkauft, steht der realisierte Gewinn auch in ihren Details.',
+      'Unten im Blatt kannst du die Jahresübersicht als PDF-Bericht teilen oder alle gesammelten Umsätze als CSV exportieren – über das Teilen-Menü z. B. in Dateien sichern oder verschicken.',
       'Beim laufenden Jahr steht außerdem eine Vorschau auf die Vorabpauschale: die Steuer, die comdirect Anfang Januar für thesaurierende ETFs abbucht. Im Dezember und Januar erinnert auch ein Hinweis auf der Startseite daran, damit das Verrechnungskonto gedeckt ist.',
     ],
   },

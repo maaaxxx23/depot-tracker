@@ -1,16 +1,22 @@
-import { Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, Text, View } from 'react-native';
+import { shareTransactionsCsv, shareYearReport } from '../../data/backup';
 import type { PauschaleEstimate } from '../../finance/vorabpauschale';
 import type { YearsOverview } from '../../finance/years';
+import type { PortfolioData } from '../../types';
 import { eur, pct, signedEur } from '../format';
+import { tapFeedback } from '../haptics';
 import { PrivateText } from '../privacy';
 import { Sheet } from '../Sheet';
-import { font, signColor, useStyles } from '../styles';
+import { font, radius, signColor, useStyles } from '../styles';
 import { DetailRow, DetailRows } from './DetailRows';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
   overview: YearsOverview;
+  /** Für die Exporte: Umsätze und Stand */
+  data: PortfolioData;
   /** Name des Vergleichsindex; null, wenn es keinen gibt */
   benchmarkName: string | null;
   /** Vorschau auf die Vorabpauschale des relevanten Jahres; null = nicht berechenbar */
@@ -18,9 +24,33 @@ interface Props {
 }
 
 /** Gewinn seit Beginn, aufgeteilt in Buchgewinn, realisiert und Ausschüttungen, dazu jedes Jahr einzeln. */
-export function YearSheet({ visible, onClose, overview, benchmarkName, vorab }: Props) {
+export function YearSheet({ visible, onClose, overview, data, benchmarkName, vorab }: Props) {
   const { theme, styles } = useStyles();
   const { years, total } = overview;
+
+  // Exporte laufen kurz im Hintergrund (PDF rendern, Datei schreiben); solange sind die Knöpfe gesperrt
+  const [exporting, setExporting] = useState(false);
+  const runExport = (job: () => Promise<void>) => async () => {
+    tapFeedback();
+    setExporting(true);
+    try {
+      await job();
+    } catch (e) {
+      Alert.alert('Teilen fehlgeschlagen', e instanceof Error ? e.message : String(e));
+    } finally {
+      setExporting(false);
+    }
+  };
+  const exportButton = (label: string, onPress: () => void) => (
+    <Pressable
+      onPress={onPress}
+      disabled={exporting}
+      accessibilityRole="button"
+      style={({ pressed }) => ({ flex: 1, backgroundColor: theme.chip, borderRadius: radius.control, paddingVertical: 11, alignItems: 'center', opacity: exporting ? 0.4 : pressed ? 0.6 : 1 })}
+    >
+      <Text style={{ color: theme.accent, fontSize: font.body, fontWeight: '600' }}>{label}</Text>
+    </Pressable>
+  );
 
   const totalRows: DetailRow[] = [
     { label: 'Buchgewinn', hint: 'Anteile, die noch im Depot liegen', value: signedEur(total.open), color: signColor(theme, total.open), private: true },
@@ -68,6 +98,12 @@ export function YearSheet({ visible, onClose, overview, benchmarkName, vorab }: 
           </View>
         );
       })}
+
+      {/* Exporte über das Teilen-Menü, z. B. in Dateien sichern oder verschicken */}
+      <View style={[styles.row, { gap: 10, marginTop: 8 }]}>
+        {exportButton('Bericht (PDF)', runExport(() => shareYearReport(data, overview, benchmarkName)))}
+        {exportButton('Umsätze (CSV)', runExport(() => shareTransactionsCsv(data)))}
+      </View>
 
       <Text style={[styles.small, { paddingHorizontal: 4 }]}>
         Realisierte Gewinne sind nach dem Prinzip „zuerst gekauft, zuerst verkauft“ gerechnet, wie es auch steuerlich gilt. Steuern und Freibeträge kennt die App nicht.

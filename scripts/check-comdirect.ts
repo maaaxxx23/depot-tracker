@@ -12,6 +12,9 @@ import { assignHoldings, describeFund, matchScore } from '../src/finance/holding
 import { analyzeComposition, companyKey, displayName, UNKNOWN } from '../src/finance/composition';
 import { backupDue, mergeLists, mergeSettings, mergeStored, NO_LISTS, NO_SETTINGS, parseBackup, parseBackupLists, parseBackupSettings, serializeBackup } from '../src/data/backupFormat';
 import { addCsvTransactions, decodeCsv, germanNumber, instrumentFromText, knownInstrumentIds, parseComdirectCsv, parseDepotCsv } from '../src/data/csvImport';
+import { buildTransactionsCsv, buildYearReportHtml } from '../src/data/report';
+import type { YearsOverview } from '../src/finance/years';
+import type { PortfolioData } from '../src/types';
 import { BENCHMARK, BENCHMARKS, fetchChart, findSymbol, loadMarketData, loadQuotes, needsRefresh, quotesStale } from '../src/market/yahoo';
 
 let failed = 0;
@@ -268,6 +271,35 @@ async function main() {
     check('Wiederherstellen: Umsätze aus beiden', restored.raw.transactions.length === 4);
     check('Wiederherstellen: Snapshots aus beiden', restored.snapshots.map((s) => s.date).join() === '2026-06-03,2026-11-07');
     check('Wiederherstellen ohne aktuellen Stand', mergeStored(null, roundTrip) === roundTrip);
+  }
+
+  // --- Berichte: Umsätze als CSV, Jahresübersicht als PDF-HTML ---
+  {
+    const data: PortfolioData = {
+      instruments: [{ isin: 'IE1', name: 'Welt; "ETF"', shortName: 'Welt', kind: 'ETF' }],
+      transactions: [
+        { date: '2026-02-01', isin: 'IE1', type: 'buy', quantity: 1.5, amount: 150.5, fees: 1.9 },
+        { date: '2026-01-01', isin: 'IE1', type: 'dividend', quantity: 0, amount: 10, fees: 0 },
+      ],
+      prices: {},
+      benchmark: null,
+      asOf: '2026-11-16',
+      source: { kind: 'comdirect', fetchedAt: '2026-11-16T10:00:00.000Z' },
+    };
+    const lines = buildTransactionsCsv(data).split('\n');
+    check('Bericht: CSV-Kopf', lines[0] === 'Datum;Typ;Wertpapier;ISIN;Stück;Betrag in EUR;Gebühren in EUR', lines[0]);
+    check('Bericht: CSV sortiert, Name mit Semikolon in Anführungszeichen', lines[1] === '2026-01-01;Ausschüttung;"Welt; ""ETF""";IE1;0;10,00;0,00', lines[1]);
+    check('Bericht: CSV Kauf mit Dezimalkomma', lines[2] === '2026-02-01;Kauf;"Welt; ""ETF""";IE1;1,5;150,50;1,90', lines[2]);
+    const overview: YearsOverview = {
+      years: [{ year: 2026, running: true, startValue: 1000, endValue: 1200, bought: 150, sold: 0, dividends: 10, realized: 0, gain: 60, twr: 0.05, benchmarkReturn: 0.04 }],
+      total: { open: 50, realized: 0, dividends: 10, gain: 60 },
+    };
+    const html = buildYearReportHtml(data, overview, 'MSCI World', new Date(2026, 10, 16, 12));
+    check('Bericht: laufendes Jahr als „bisher“', html.includes('2026 (bisher)'));
+    check('Bericht: Vergleichsindex in der Tabelle', html.includes('MSCI World'));
+    check('Bericht: Erstellt-Datum', html.includes('16.11.2026'));
+    check('Bericht: kein NaN oder undefined', !/NaN|undefined/.test(html));
+    check('Bericht: Verkäufe ohne Wert als Strich', html.includes('<td>–</td>'));
   }
 
   // --- Kurshistorie von Yahoo (nachgebaut) ---

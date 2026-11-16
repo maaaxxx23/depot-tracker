@@ -1,7 +1,11 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
+import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import type { YearsOverview } from '../finance/years';
+import type { PortfolioData } from '../types';
 import { mergeLists, mergeSettings, mergeStored, parseBackup, parseBackupLists, parseBackupSettings, serializeBackup, StoredPortfolio } from './backupFormat';
+import { buildTransactionsCsv, buildYearReportHtml } from './report';
 import { addCsvTransactions, decodeCsv, ImportResult, knownInstrumentIds, parseComdirectCsv } from './csvImport';
 import { FundComposition, parseHoldings } from './holdingsImport';
 import { lastBackup, loadLists, loadSettings, loadStored, replaceStored, saveLists, saveSettings } from './store';
@@ -30,6 +34,43 @@ export async function exportBackup(): Promise<boolean> {
     if (file.exists) file.delete();
   }
   return true;
+}
+
+const today = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
+/** Teilt eine Cache-Datei und räumt sie danach wieder weg. */
+async function shareFile(file: File, options: Parameters<typeof Sharing.shareAsync>[1]): Promise<void> {
+  try {
+    await Sharing.shareAsync(file.uri, options);
+  } finally {
+    if (file.exists) file.delete();
+  }
+}
+
+/** Erzeugt den Jahresbericht als PDF und öffnet das Teilen-Menü. */
+export async function shareYearReport(data: PortfolioData, overview: YearsOverview, benchmarkName: string | null): Promise<void> {
+  const { uri } = await Print.printToFileAsync({ html: buildYearReportHtml(data, overview, benchmarkName) });
+  let file = new File(uri);
+  // Hübscher Dateiname statt des technischen; klappt das Umbenennen nicht, wird trotzdem geteilt
+  try {
+    const named = new File(Paths.cache, `depot-tracker-bericht-${today()}.pdf`);
+    if (named.exists) named.delete();
+    file.move(named);
+    file = named;
+  } catch {}
+  await shareFile(file, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: 'Jahresbericht teilen' });
+}
+
+/** Schreibt alle gesammelten Umsätze als CSV und öffnet das Teilen-Menü. */
+export async function shareTransactionsCsv(data: PortfolioData): Promise<void> {
+  const file = new File(Paths.cache, `depot-tracker-umsaetze-${today()}.csv`);
+  if (file.exists) file.delete();
+  file.create();
+  await file.write(buildTransactionsCsv(data));
+  await shareFile(file, { mimeType: 'text/csv', UTI: 'public.comma-separated-values-text', dialogTitle: 'Umsätze teilen' });
 }
 
 /** Lässt eine Sicherung auswählen und führt sie mit dem aktuellen Stand zusammen (Depotdaten und Einstellungen). null = abgebrochen. */
