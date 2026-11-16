@@ -35,6 +35,8 @@ const PREFERENCES = {
   appearance: 'appearance-v1',
   haptics: 'haptics-v1',
   welcome: 'welcome-seen-v1',
+  monthReview: 'month-review-v1',
+  monthReviewDismissed: 'month-review-dismissed-v1',
 };
 
 const MAX_SNAPSHOTS = 2000;
@@ -164,6 +166,18 @@ export const welcomeSeen = {
 export const hapticsPreference = {
   get: () => readJson<boolean>(PREFERENCES.haptics, true),
   set: (on: boolean) => AsyncStorage.setItem(PREFERENCES.haptics, JSON.stringify(on)),
+};
+
+/** Monats-Rückblick zu Monatsbeginn zeigen; standardmäßig an. */
+export const monthReviewPreference = {
+  get: () => readJson<boolean>(PREFERENCES.monthReview, true),
+  set: (on: boolean) => AsyncStorage.setItem(PREFERENCES.monthReview, JSON.stringify(on)),
+};
+
+/** Monat (YYYY-MM), dessen Rückblick auf der Karte ausgeblendet wurde; der nächste erscheint wieder. */
+export const monthReviewDismissed = {
+  get: () => readJson<string | null>(PREFERENCES.monthReviewDismissed, null),
+  set: (month: string | null) => AsyncStorage.setItem(PREFERENCES.monthReviewDismissed, JSON.stringify(month)),
 };
 
 /** Darstellung: dem System folgen oder fest hell bzw. dunkel. */

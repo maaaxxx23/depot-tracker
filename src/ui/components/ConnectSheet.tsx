@@ -26,6 +26,9 @@ interface Props {
   onSaved: (setup: Setup) => void;
   onDisconnected: () => void;
   onRestored: (stored: StoredPortfolio) => void;
+  /** Monats-Rückblick zu Monatsbeginn zeigen; Einschalten holt einen ausgeblendeten zurück */
+  reviewEnabled: boolean;
+  onReviewEnabledChange: (on: boolean) => void;
 }
 
 const ACCESSORY_NEXT = 'connect-next';
@@ -43,7 +46,7 @@ function KeyboardBar({ label, onPress }: { label: string; onPress: () => void })
 }
 
 /** Einrichtung des comdirect-Zugangs; alles landet im iOS-Schlüsselbund. */
-export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighlightDone, onClose, onSaved, onDisconnected, onRestored }: Props) {
+export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighlightDone, onClose, onSaved, onDisconnected, onRestored, reviewEnabled, onReviewEnabledChange }: Props) {
   const { theme, styles } = useStyles();
   // Tour-Finale: nach dem Öffnen zum Schutz-Bereich scrollen
   const sheetScroll = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -424,6 +427,19 @@ export function ConnectSheet({ visible, setup, highlightSchutz, onSchutzHighligh
         <View style={[styles.row, styles.divider, { justifyContent: 'space-between', paddingTop: 10 }]}>
           <Text style={[styles.label, { fontWeight: '600' }]}>Haptisches Feedback</Text>
           <Switch value={haptics} onValueChange={toggleHaptics} />
+        </View>
+        <View style={[styles.row, styles.divider, { justifyContent: 'space-between', gap: 12, paddingTop: 10 }]}>
+          <View style={{ flexShrink: 1, gap: 2 }}>
+            <Text style={[styles.label, { fontWeight: '600' }]}>Monats-Rückblick</Text>
+            <Text style={styles.small}>Karte zum Vormonat in den ersten Tagen des Monats</Text>
+          </View>
+          <Switch
+            value={reviewEnabled}
+            onValueChange={(on) => {
+              tapFeedback();
+              onReviewEnabledChange(on);
+            }}
+          />
         </View>
       </View>
 

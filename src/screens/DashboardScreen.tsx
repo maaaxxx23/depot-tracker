@@ -6,7 +6,7 @@ import { mapPortfolio } from '../comdirect/portfolio';
 import { localDate } from '../comdirect/sync';
 import { backupDue, exportBackup, pickHoldings } from '../data/backup';
 import type { FundComposition } from '../data/holdingsImport';
-import { chartModePreference, compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
+import { chartModePreference, compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, monthReviewDismissed, monthReviewPreference, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
 import { IndustryCache, loadIndustries } from '../market/industries';
 import { refreshMarket } from '../market/refresh';
 import type { MarketData } from '../market/yahoo';
@@ -176,6 +176,8 @@ export function DashboardScreen() {
       .catch(() => {});
     loadPreferences();
     chartModePreference.get().then(setChartMode).catch(() => {});
+    monthReviewPreference.get().then(setReviewEnabled).catch(() => {});
+    monthReviewDismissed.get().then(setDismissedReview).catch(() => {});
     compositionStore.get().then(setCompositions).catch(() => {});
     industryStore
       .get()
@@ -252,6 +254,22 @@ export function DashboardScreen() {
   const allocation = useMemo(() => analyzeAllocation(positions, targets), [positions, targets]);
   const insights = useMemo(() => buildInsights(data, positions, goal !== null, allocation), [data, positions, goal, allocation]);
   const review = useMemo(() => reviewToShow(data), [data]);
+  // Monats-Rückblick: generell abschaltbar, einzelne Monate per Kreuz ausblendbar
+  const [reviewEnabled, setReviewEnabled] = useState(true);
+  const [dismissedReview, setDismissedReview] = useState<string | null>(null);
+  const changeReviewEnabled = (on: boolean) => {
+    setReviewEnabled(on);
+    monthReviewPreference.set(on).catch(() => {});
+    if (on) {
+      // Einschalten holt einen gerade ausgeblendeten Rückblick zurück
+      setDismissedReview(null);
+      monthReviewDismissed.set(null).catch(() => {});
+    }
+  };
+  const dismissReview = (month: string) => {
+    setDismissedReview(month);
+    monthReviewDismissed.set(month).catch(() => {});
+  };
   const savings = useMemo(() => detectSavings(data, marks), [data, marks]);
   const projection = useMemo(
     () => (goal ? projectGoal(result.endValue, goal, savings.monthlyRate, data.asOf, annualReturn) : null),
@@ -470,7 +488,7 @@ export function DashboardScreen() {
             onPeriodChange={setPeriodIndex}
           />
         </View>
-        {review && <MonthReviewCard review={review} />}
+        {review && reviewEnabled && review.month !== dismissedReview && <MonthReviewCard review={review} onDismiss={() => dismissReview(review.month)} />}
         <InsightList insights={insights} />
         <View ref={(r) => void (tourTargets.current.saving = r)} collapsable={false} style={{ flexDirection: 'row', gap: 12 }}>
           <SavingsCard savings={savings} goal={goal} projection={projection} onOpen={() => setSheet('goal')} />
@@ -596,6 +614,8 @@ export function DashboardScreen() {
       <ConnectSheet
         visible={sheet === 'connect'}
         setup={setup}
+        reviewEnabled={reviewEnabled}
+        onReviewEnabledChange={changeReviewEnabled}
         highlightSchutz={connectHighlight}
         onSchutzHighlightDone={() => setConnectHighlight(false)}
         onClose={() => {
