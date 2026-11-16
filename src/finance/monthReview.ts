@@ -24,6 +24,14 @@ export interface MonthReview {
 const lastDayOf = (year: number, month: number) =>
   `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
 
+/** Rückblick nur zu Monatsbeginn, und nur, wenn es etwas zu zeigen gibt. */
+export function reviewToShow(data: PortfolioData): MonthReview | null {
+  if (Number(data.asOf.slice(8, 10)) > REVIEW_DAYS) return null;
+  const review = reviewLastMonth(data);
+  if (!review || (Math.abs(review.change) < 1 && Math.abs(review.invested) < 1)) return null;
+  return review;
+}
+
 /** Rückblick auf den Monat vor `asOf`; null, wenn das Depot damals leer und ohne Bewegung war. */
 export function reviewLastMonth(data: PortfolioData): MonthReview | null {
   let year = Number(data.asOf.slice(0, 4));

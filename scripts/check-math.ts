@@ -5,7 +5,7 @@ import { xirr } from '../src/finance/xirr';
 import { analyzeYears, realizedSales } from '../src/finance/years';
 import { estimateVorabpauschale, pauschaleYear } from '../src/finance/vorabpauschale';
 import { analyzeAllocation, catchUpAmount, currentAsTargets, splitPurchase } from '../src/finance/allocation';
-import { reviewLastMonth } from '../src/finance/monthReview';
+import { REVIEW_DAYS, reviewLastMonth, reviewToShow } from '../src/finance/monthReview';
 import { detectSavings, monthsToGoal, projectGoal } from '../src/finance/savings';
 import { capitalToConsume, capitalToPreserve, monthlyFromCapital, roundCapital } from '../src/finance/withdrawal';
 import { buildInsights, concentration, drawdownOfCurrentHoldings, nextMilestone, savingsStreak } from '../src/finance/insights';
@@ -292,8 +292,9 @@ check(
   check('Rückblick: eingezahlt inkl. Gebühren', review.invested, 221.5);
   check('Rückblick: Wertentwicklung = Rest', review.gain, 1320 - 1000 - 221.5);
   check('Rückblick: leeres Depot hat keinen Rückblick', reviewLastMonth(makeData([buyTx('2026-11-02', 'ETF', 1)], '2026-11-04')) === null ? 1 : 0, 1);
-  check('Rückblick: Hinweis zu Monatsbeginn', buildInsights(data, analyzePositions(data)).filter((i) => i.id === 'month-review').length, 1);
-  check('Rückblick: später im Monat kein Hinweis', buildInsights({ ...data, asOf: '2026-11-12' }, analyzePositions(data)).filter((i) => i.id === 'month-review').length, 0);
+  check('Rückblick: Karte zu Monatsbeginn', reviewToShow(data) !== null ? 1 : 0, 1);
+  // Erwartung hängt am Zeitfenster, damit der Test auch mit dem Test-Schalter (31 Tage) stimmt
+  check('Rückblick: später im Monat keine Karte', reviewToShow({ ...data, asOf: '2026-11-12' }) === null ? 1 : 0, 12 > REVIEW_DAYS ? 1 : 0);
 }
 
 // Vorabpauschale-Vorschau

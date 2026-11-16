@@ -1,8 +1,7 @@
 import { PortfolioData, TextPart } from '../types';
-import { monthWord, monthYear, percent, points, shortPercent } from '../ui/format';
+import { monthYear, percent, points, shortPercent } from '../ui/format';
 import type { AllocationRow } from './allocation';
 import { estimateVorabpauschale, pauschaleYear } from './vorabpauschale';
-import { reviewLastMonth, REVIEW_DAYS } from './monthReview';
 import { holdingsAt, PositionResult, priceAt, priceDates, valueAt } from './performance';
 
 // Regelbasierte Hinweise: nur Beobachtungen, keine Empfehlungen.
@@ -99,26 +98,6 @@ export function savingsStreak(data: PortfolioData): number {
  */
 export function buildInsights(data: PortfolioData, positions: PositionResult[], hasGoal = false, allocation?: Map<string, AllocationRow>): Insight[] {
   const insights: Insight[] = [];
-
-  // Zu Monatsbeginn: kurzer Rückblick auf den Vormonat (steht vorne, damit er nicht verdrängt wird)
-  if (Number(data.asOf.slice(8, 10)) <= REVIEW_DAYS) {
-    const review = reviewLastMonth(data);
-    if (review && (Math.abs(review.change) >= 1 || Math.abs(review.invested) >= 1)) {
-      const parts: TextPart[] =
-        Math.abs(review.invested) < 1
-          ? [`Dein ${monthWord(review.month)}:`, { amount: review.change, signed: true, colored: true }, 'Wertentwicklung.']
-          : [
-              `Dein ${monthWord(review.month)}:`,
-              { amount: review.change, signed: true },
-              '– davon',
-              { amount: Math.abs(review.invested) },
-              review.invested >= 0 ? 'eingezahlt und' : 'entnommen und',
-              { amount: review.gain, signed: true, colored: true },
-              'Wertentwicklung.',
-            ];
-      insights.push({ id: 'month-review', tone: review.gain >= 0 ? 'good' : 'info', parts });
-    }
-  }
 
   const dd = drawdownOfCurrentHoldings(data);
   if (dd.drop > DRAWDOWN_LIMIT) {

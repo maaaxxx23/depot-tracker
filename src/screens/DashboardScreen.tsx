@@ -12,6 +12,7 @@ import { refreshMarket } from '../market/refresh';
 import type { MarketData } from '../market/yahoo';
 import { createDemoData } from '../demo/demoData';
 import { buildInsights } from '../finance/insights';
+import { reviewToShow } from '../finance/monthReview';
 import { analyzePeriod, analyzePositions, buildSeries, PositionResult } from '../finance/performance';
 import { analyzeAllocation, TargetShares } from '../finance/allocation';
 import { analyzeComposition } from '../finance/composition';
@@ -34,6 +35,7 @@ import { YearSheet } from '../ui/components/YearSheet';
 import { useVisit } from './useVisit';
 import { Hero } from '../ui/components/Hero';
 import { InsightList } from '../ui/components/InsightList';
+import { MonthReviewCard } from '../ui/components/MonthReviewCard';
 import { LoginSheet } from '../ui/components/LoginSheet';
 import { PositionList, positionColor } from '../ui/components/PositionList';
 import { PositionSheet } from '../ui/components/PositionSheet';
@@ -249,6 +251,7 @@ export function DashboardScreen() {
   };
   const allocation = useMemo(() => analyzeAllocation(positions, targets), [positions, targets]);
   const insights = useMemo(() => buildInsights(data, positions, goal !== null, allocation), [data, positions, goal, allocation]);
+  const review = useMemo(() => reviewToShow(data), [data]);
   const savings = useMemo(() => detectSavings(data, marks), [data, marks]);
   const projection = useMemo(
     () => (goal ? projectGoal(result.endValue, goal, savings.monthlyRate, data.asOf, annualReturn) : null),
@@ -467,6 +470,7 @@ export function DashboardScreen() {
             onPeriodChange={setPeriodIndex}
           />
         </View>
+        {review && <MonthReviewCard review={review} />}
         <InsightList insights={insights} />
         <View ref={(r) => void (tourTargets.current.saving = r)} collapsable={false} style={{ flexDirection: 'row', gap: 12 }}>
           <SavingsCard savings={savings} goal={goal} projection={projection} onOpen={() => setSheet('goal')} />
