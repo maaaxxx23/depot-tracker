@@ -3,7 +3,7 @@ import { Alert, Keyboard, Pressable, Text, TextInput, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons';
 import { withdrawalPreference } from '../../data/store';
 import { tapFeedback } from '../haptics';
-import { corridorMonths, GoalProjection, MAX_RETURN, projectSeries, RETURN_STEP, Savings } from '../../finance/savings';
+import { corridorMonths, GoalProjection, MAX_RETURN, projectGoal, projectSeries, RETURN_STEP, Savings } from '../../finance/savings';
 import { LineChart } from '../LineChart';
 import {
   capitalToConsume,
@@ -37,8 +37,11 @@ interface Props {
   /** Angenommene Rendite pro Jahr für die Hochrechnung */
   annualReturn: number;
   onChangeReturn: (rate: number) => void;
-  /** Bisherige Rendite des Depots pro Jahr, nur zum Vergleich */
+  /** Bisherige Rendite des Depots pro Jahr, zum Vergleich und als eigene Linie im Korridor */
   historicReturn: number | null;
+  /** Name und langjähriger Durchschnitt des Vergleichsindex; null, wenn es keinen gibt */
+  benchmarkName: string | null;
+  benchmarkAverage: number | null;
   /** Heutiger Depotwert, für die Entnahme-Modellrechnung */
   currentValue: number;
   /** Stichtag der Daten, als Startpunkt des Korridor-Diagramms */
@@ -48,7 +51,7 @@ interface Props {
 }
 
 /** Wunschbetrag festlegen, dazu die erkannten Sparpläne, die Hochrechnung und die Entnahme-Modellrechnung. */
-export function GoalSheet({ visible, onClose, savings, instruments, goal, projection, onChangeGoal, annualReturn, onChangeReturn, historicReturn, currentValue, asOf, positions }: Props) {
+export function GoalSheet({ visible, onClose, savings, instruments, goal, projection, onChangeGoal, annualReturn, onChangeReturn, historicReturn, benchmarkName, benchmarkAverage, currentValue, asOf, positions }: Props) {
   const { theme, styles } = useStyles();
   const { hidden } = usePrivacy();
   const [input, setInput] = useState('');
@@ -180,10 +183,15 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
       <Ionicons name={icon} size={22} color={theme.text} />
     </Pressable>
   );
-  // Korridor-Diagramm: drei Verläufe bis zum Wunschbetrag; die Linien werden dort flach
+  // Korridor-Diagramm: deine Annahme in Gold, dazu echte Vergleichswerte –
+  // die bisherige Depot-Rendite (grau) und der langjährige Index-Schnitt (blau)
   const corridor = (() => {
     if (!projection || !goal || projection.remaining <= 0 || currentValue <= 0) return null;
-    const months = corridorMonths(currentValue, goal, savings.monthlyRate, annualReturn);
+    const extra = [
+      ...(historicReturn !== null ? [{ rate: historicReturn, color: theme.invested }] : []),
+      ...(benchmarkAverage !== null ? [{ rate: benchmarkAverage, color: theme.benchmark }] : []),
+    ];
+    const months = corridorMonths(currentValue, goal, savings.monthlyRate, [annualReturn, ...extra.map((e) => e.rate)]);
     const start = Number(asOf.slice(0, 4)) * 12 + Number(asOf.slice(5, 7)) - 1;
     const dates = Array.from({ length: months + 1 }, (_, m) => {
       const index = start + m;
@@ -193,13 +201,14 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
     return {
       dates,
       series: [
-        { values: line(projection.weak.rate), color: theme.invested, dashed: true },
-        { values: line(projection.strong.rate), color: theme.invested, dashed: true },
-        // Die erwartete Linie zuletzt, damit sie über dem Korridor liegt
+        ...extra.map((e) => ({ values: line(e.rate), color: e.color, dashed: true })),
+        // Die Annahme-Linie zuletzt, damit sie obenauf liegt
         { values: line(annualReturn), color: theme.accent },
       ],
     };
   })();
+  // Zeitpunkt, zu dem das Ziel mit einer bestimmten Rendite erreicht wäre
+  const scenarioMonth = (rate: number) => (goal ? projectGoal(currentValue, goal, savings.monthlyRate, asOf, rate).withReturn : null);
 
   // Was-wäre-wenn: ein Monat je Szenario; „erreicht“, sobald das Ziel schon steht
   const when = (month: string | null) => (projection && projection.remaining <= 0 ? 'erreicht' : month ? monthName(month) : 'über 50 Jahre');
@@ -212,15 +221,12 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
           hint: 'deine Annahme, kein Versprechen',
           value: when(projection.withReturn),
         },
-        // Eine Zeile statt dreier: die Spanne zwischen starkem und vorsichtigem Szenario
-        ...(projection.remaining > 0 && projection.strong.rate > projection.weak.rate
-          ? [
-              {
-                label: 'Je nach Börsenjahren',
-                hint: `stark (${shortPercent(projection.strong.rate)}) bis vorsichtig (${shortPercent(projection.weak.rate)})`,
-                value: `${projection.strong.month ? monthYear(projection.strong.month) : '> 50 J.'} – ${projection.weak.month ? monthYear(projection.weak.month) : '> 50 J.'}`,
-              },
-            ]
+        // Echte Vergleichswerte statt erfundener Szenarien: so lief es bisher bzw. langfristig
+        ...(projection.remaining > 0 && historicReturn !== null
+          ? [{ label: `Mit deiner bisherigen Rendite (${shortPercent(historicReturn)})`, hint: 'Depot pro Jahr seit Beginn', value: when(scenarioMonth(historicReturn)) }]
+          : []),
+        ...(projection.remaining > 0 && benchmarkName && benchmarkAverage !== null
+          ? [{ label: `Mit dem ${benchmarkName}-Schnitt (${shortPercent(benchmarkAverage)})`, hint: 'Durchschnitt der geladenen Kurshistorie', value: when(scenarioMonth(benchmarkAverage)) }]
           : []),
         {
           label: 'Ohne Kursgewinne',
@@ -279,7 +285,10 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
             <View style={[styles.card, { gap: 6 }]}>
               <LineChart theme={theme} height={150} dates={corridor.dates} series={corridor.series} formatY={compactEur} blurValues={hidden} />
               <Text style={styles.small}>
-                Gold: erwartet ({shortPercent(annualReturn)}) · grau gestrichelt: vorsichtig bis stark. Jede Linie endet, wenn sie den Wunschbetrag erreicht.
+                Gold: deine Annahme ({shortPercent(annualReturn)})
+                {historicReturn !== null ? ` · Grau: Depot bisher (${shortPercent(historicReturn)})` : ''}
+                {benchmarkName && benchmarkAverage !== null ? ` · Blau: ${benchmarkName}-Schnitt (${shortPercent(benchmarkAverage)})` : ''}. Jede
+                Linie endet, wenn sie den Wunschbetrag erreicht.
               </Text>
             </View>
           )}

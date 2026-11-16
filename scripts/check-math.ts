@@ -6,7 +6,7 @@ import { analyzeYears, realizedSales, yearContributions } from '../src/finance/y
 import { estimateVorabpauschale, pauschaleYear } from '../src/finance/vorabpauschale';
 import { analyzeAllocation, catchUpAmount, currentAsTargets, splitPurchase } from '../src/finance/allocation';
 import { REVIEW_DAYS, reviewLastMonth, reviewToShow } from '../src/finance/monthReview';
-import { corridorMonths, detectSavings, monthsToGoal, projectGoal, projectSeries } from '../src/finance/savings';
+import { averageAnnualReturn, corridorMonths, detectSavings, monthsToGoal, projectGoal, projectSeries } from '../src/finance/savings';
 import { capitalToConsume, capitalToPreserve, monthlyFromCapital, roundCapital } from '../src/finance/withdrawal';
 import { buildInsights, concentration, drawdownOfCurrentHoldings, nextMilestone, savingsStreak } from '../src/finance/insights';
 import { PortfolioData, Transaction } from '../src/types';
@@ -217,13 +217,15 @@ check(
   check('Ziel: Fortschritt', proj.progress, 0.5);
   check('Ziel: Monat ohne Kursgewinne', proj.withoutReturn === '2027-09' ? 1 : 0, 1);
   check('Ziel: mit Rendite nicht später', proj.withReturn! <= proj.withoutReturn! ? 1 : 0, 1);
-  // Was-wäre-wenn: ±3 Punkte um die Annahme, begrenzt auf 0 bis MAX_RETURN
-  check('Ziel: vorsichtig = Annahme − 3 Punkte', proj.weak.rate, 0.02);
-  check('Ziel: stark = Annahme + 3 Punkte', proj.strong.rate, 0.08);
-  check('Ziel: vorsichtig nicht früher, stark nicht später', proj.weak.month! >= proj.withReturn! && proj.strong.month! <= proj.withReturn! ? 1 : 0, 1);
-  check('Ziel: vorsichtig stoppt bei 0 %', projectGoal(1000, 2000, 100, '2026-11-04', 0.02).weak.rate, 0);
-  check('Ziel: stark stoppt bei der Obergrenze', projectGoal(1000, 2000, 100, '2026-11-04', 0.11).strong.rate, 0.12);
-  check('Ziel: 0 % vorsichtig = ohne Kursgewinne', projectGoal(1000, 2000, 100, '2026-11-04', 0.03).weak.month === proj.withoutReturn ? 1 : 0, 1);
+  // Durchschnitts-Rendite einer Kursreihe (echte Vergleichslinien in der Hochrechnung)
+  check(
+    'Schnitt: Verdopplung in 10 Jahren ≈ 7,2 %',
+    averageAnnualReturn([{ date: '2016-01-01', price: 100 }, { date: '2026-01-01', price: 200 }])!,
+    Math.pow(2, 365.25 / 3653) - 1,
+    1e-9,
+  );
+  check('Schnitt: unter drei Jahren kein Durchschnitt', averageAnnualReturn([{ date: '2025-01-01', price: 100 }, { date: '2026-01-01', price: 150 }]) === null ? 1 : 0, 1);
+  check('Schnitt: leere Reihe', averageAnnualReturn([]) === null ? 1 : 0, 1);
 
   // Korridor-Diagramm
   const corridorSeries = projectSeries(1000, 2000, 100, 0, 12);
@@ -231,9 +233,9 @@ check(
   check('Korridor: ohne Rendite wächst um die Rate', corridorSeries[5], 1500);
   check('Korridor: am Ziel gedeckelt', Math.max(...corridorSeries), 2000);
   check('Korridor: Länge = Monate + 1', corridorSeries.length, 13);
-  check('Korridor: Zeitraum endet mit dem vorsichtigen Szenario', corridorMonths(1000, 5000, 100, 0.05), monthsToGoal(1000, 5000, 100, 0.02)!);
-  check('Korridor: mindestens ein Jahr', corridorMonths(1000, 1100, 100, 0.05), 12);
-  check('Korridor: Unerreichbares wird auf 25 Jahre begrenzt', corridorMonths(1000, 10_000_000, 0, 0.03), 300);
+  check('Korridor: Zeitraum endet mit der langsamsten Linie', corridorMonths(1000, 5000, 100, [0.05, 0.02]), monthsToGoal(1000, 5000, 100, 0.02)!);
+  check('Korridor: mindestens ein Jahr', corridorMonths(1000, 1100, 100, [0.05]), 12);
+  check('Korridor: Unerreichbares wird auf 25 Jahre begrenzt', corridorMonths(1000, 10_000_000, 0, [0.03]), 300);
 
   // Jahres-Beiträge: die Summe der Positions-Beiträge ist der Jahres-Gewinn
   for (const y of analyzeYears(demo).years.slice(0, 2)) {

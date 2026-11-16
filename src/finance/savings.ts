@@ -139,17 +139,6 @@ export function monthsToGoal(value: number, goal: number, monthlyRate: number, a
   return null;
 }
 
-/** Abstand der Was-wäre-wenn-Szenarien zur angenommenen Rendite, in Punkten pro Jahr. */
-export const SCENARIO_SPREAD = 0.03;
-
-/** Ein Was-wäre-wenn-Szenario der Hochrechnung. */
-export interface GoalScenario {
-  /** Rendite pro Jahr, mit der gerechnet wurde */
-  rate: number;
-  /** Erwarteter Monat (YYYY-MM); null = nicht innerhalb von 50 Jahren */
-  month: string | null;
-}
-
 export interface GoalProjection {
   /** Anteil des Ziels, der erreicht ist (höchstens 1) */
   progress: number;
@@ -160,9 +149,6 @@ export interface GoalProjection {
   withReturn: string | null;
   /** Erwarteter Monat nur durch Einzahlungen, ohne Kursgewinne; null = ohne Sparrate nicht erreichbar */
   withoutReturn: string | null;
-  /** Was-wäre-wenn: dieselbe Rechnung mit schwächerer bzw. stärkerer Rendite (±SCENARIO_SPREAD, begrenzt auf 0..MAX_RETURN) */
-  weak: GoalScenario;
-  strong: GoalScenario;
 }
 
 /** Länge des Korridor-Diagramms: höchstens 25 Jahre. */
@@ -183,22 +169,36 @@ export function projectSeries(value: number, goal: number, monthlyRate: number, 
   return points;
 }
 
-/** Zeitraum des Korridor-Diagramms: bis auch das vorsichtige Szenario ankommt, begrenzt auf 1 bis 25 Jahre. */
-export function corridorMonths(value: number, goal: number, monthlyRate: number, annualReturn: number): number {
-  const weak = monthsToGoal(value, goal, monthlyRate, Math.max(0, annualReturn - SCENARIO_SPREAD));
-  return Math.max(12, Math.min(CORRIDOR_MAX_MONTHS, weak ?? CORRIDOR_MAX_MONTHS));
+/** Zeitraum des Korridor-Diagramms: bis auch die langsamste Linie ankommt, begrenzt auf 1 bis 25 Jahre. */
+export function corridorMonths(value: number, goal: number, monthlyRate: number, rates: number[]): number {
+  let longest: number | null = null;
+  for (const rate of rates) {
+    const months = monthsToGoal(value, goal, monthlyRate, rate);
+    if (months !== null) longest = Math.max(longest ?? 0, months);
+  }
+  return Math.max(12, Math.min(CORRIDOR_MAX_MONTHS, longest ?? CORRIDOR_MAX_MONTHS));
+}
+
+/**
+ * Durchschnittliche Rendite pro Jahr einer Kursreihe (geometrisch, von erstem bis letztem Punkt).
+ * null bei weniger als drei Jahren Historie – ein kürzerer Zeitraum wäre kein „Durchschnitt“.
+ */
+export function averageAnnualReturn(points: { date: string; price: number }[]): number | null {
+  if (points.length < 2) return null;
+  const first = points[0];
+  const last = points[points.length - 1];
+  const years = (Date.parse(last.date) - Date.parse(first.date)) / (365.25 * 24 * 60 * 60 * 1000);
+  if (years < 3 || first.price <= 0 || last.price <= 0) return null;
+  return Math.pow(last.price / first.price, 1 / years) - 1;
 }
 
 export function projectGoal(value: number, goal: number, monthlyRate: number, asOf: string, annualReturn = DEFAULT_RETURN): GoalProjection {
   const month = (n: number | null) => (n === null ? null : monthBefore(asOf, -n));
-  const scenario = (rate: number): GoalScenario => ({ rate, month: month(monthsToGoal(value, goal, monthlyRate, rate)) });
   return {
     progress: goal > 0 ? Math.min(1, Math.max(0, value / goal)) : 0,
     remaining: Math.max(0, goal - value),
     annualReturn,
     withReturn: month(monthsToGoal(value, goal, monthlyRate, annualReturn)),
     withoutReturn: month(monthsToGoal(value, goal, monthlyRate, 0)),
-    weak: scenario(Math.max(0, annualReturn - SCENARIO_SPREAD)),
-    strong: scenario(Math.min(MAX_RETURN, annualReturn + SCENARIO_SPREAD)),
   };
 }

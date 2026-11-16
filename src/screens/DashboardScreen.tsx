@@ -17,7 +17,7 @@ import { analyzePeriod, analyzePositions, buildSeries, PositionResult } from '..
 import { analyzeAllocation, TargetShares } from '../finance/allocation';
 import { analyzeComposition } from '../finance/composition';
 import { analyzeOverlap } from '../finance/overlap';
-import { DEFAULT_RETURN, detectSavings, planStatus, projectGoal } from '../finance/savings';
+import { averageAnnualReturn, DEFAULT_RETURN, detectSavings, planStatus, projectGoal } from '../finance/savings';
 import { estimateVorabpauschale, pauschaleYear } from '../finance/vorabpauschale';
 import { analyzeYears } from '../finance/years';
 import { BenchmarkSheet } from '../ui/components/BenchmarkSheet';
@@ -304,6 +304,8 @@ export function DashboardScreen() {
     [goal, result, savings, data, annualReturn],
   );
   const historicReturn = useMemo(() => analyzePeriod(data, null).irr, [data]);
+  // Langjähriger Durchschnitt des Vergleichsindex, als echte Vergleichslinie in der Hochrechnung
+  const benchmarkAverage = useMemo(() => (data.benchmark ? averageAnnualReturn(data.prices[data.benchmark.isin] ?? []) : null), [data]);
   const years = useMemo(() => analyzeYears(data), [data]);
   const vorab = useMemo(() => estimateVorabpauschale(data, pauschaleYear(data.asOf)), [data]);
   const period = periods[activeIndex];
@@ -638,6 +640,8 @@ export function DashboardScreen() {
         projection={projection}
         annualReturn={annualReturn}
         historicReturn={historicReturn}
+        benchmarkName={data.benchmark?.name ?? null}
+        benchmarkAverage={benchmarkAverage}
         currentValue={result.endValue}
         asOf={data.asOf}
         positions={positions}
