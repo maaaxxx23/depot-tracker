@@ -65,7 +65,7 @@ export const GUIDE: GuideSection[] = [
       '• Sparen & Ziel: deine Sparrate und der Fortschritt zu deinem Wunschbetrag. Antippen zeigt Details, auch was du dieses Jahr eingezahlt hast.',
       '• Positionen: Aufteilung als Balken und jede Position mit Wert und Rendite. Antippen öffnet die Details, dort kannst du auch eine eigene Notiz hinterlegen („Warum gekauft?“). Über „Zielaufteilung“ legst du Wunschanteile fest.',
       '• Was steckt drin: die größten Länder und Branchen über alle deine ETFs. Antippen öffnet die Details und den Import der Bestandslisten.',
-      '• Jahre: Gewinn und Rendite des laufenden Jahres, darunter die Vorjahre. Antippen öffnet die Jahresübersicht.',
+      '• Jahre: Gewinn und Rendite des laufenden Jahres, darunter die Vorjahre. Antippen öffnet die Jahresübersicht – dort steht bei jedem Jahr auch, welche Position wie viel zum Gewinn beigetragen hat.',
     ],
   },
   {
@@ -107,7 +107,7 @@ export const GUIDE: GuideSection[] = [
       'Neuer Sparplan? Öffne die Position und schalte „Sparplan“ ein. Dann zählt er sofort mit der Höhe des letzten Kaufs. Die App prüft weiter mit: Wird im laufenden und im letzten Monat nicht gekauft, zählt er nicht mehr zur Sparrate und ist als inaktiv gekennzeichnet.',
       '„Dieses Jahr eingezahlt“ sind alle Käufe des laufenden Jahres zusammen, auch Einzelkäufe.',
       'Tippe auf die Karte, um einen Wunschbetrag für dein Depot festzulegen. Danach zeigt ein Balken, wie weit du bist, und die App schätzt, wann du das Ziel erreichst:',
-      '• als Korridor aus drei Szenarien: „Erwartet“ rechnet mit deiner angenommenen Rendite (mit − und + einstellbar, Vorgabe 5 %), „Vorsichtig“ und „Stark“ mit 3 Punkten weniger bzw. mehr – so siehst du, wie stark das Ziel-Datum an der Rendite hängt, und',
+      '• als Korridor aus drei Szenarien: „Erwartet“ rechnet mit deiner angenommenen Rendite (mit − und + einstellbar, Vorgabe 5 %), „Vorsichtig“ und „Stark“ mit 3 Punkten weniger bzw. mehr – ein kleines Diagramm zeigt die drei Verläufe, jede Linie endet am Wunschbetrag – und',
       '• ganz ohne Kursgewinne, nur durch deine Sparrate.',
       'Unter „Entnahme“ rechnest du die andere Richtung: Du gibst eine Wunsch-Entnahme pro Monat ein, und die App zeigt, wie groß das Depot dafür sein müsste – einmal bei Kapitalerhalt (die Entnahme kommt allein aus der Rendite, das Depot bleibt) und einmal beim Verzehr über eine wählbare Zahl von Jahren (danach ist das Depot ganz aufgebraucht; − und + springen in 5er-Schritten, Antippen der Jahreszahl erlaubt jedes Jahr dazwischen). Dazu siehst du, was dein heutiges Depot bei Kapitalerhalt auszahlen könnte. Beide Beträge – Kapitalerhalt wie Verzehr – kannst du mit einem Tipp als Wunschbetrag übernehmen, und die Hochrechnung schätzt, wann du ihn erreichst. Alles ist eine grobe Modellrechnung ohne Steuern und Inflation, keine Empfehlung.',
       'Ziel, Rendite, Sparplan-Markierungen, Zielaufteilung und Wunsch-Entnahme bleiben gespeichert, auch wenn du den comdirect-Zugang löschst, und sind in der Sicherungsdatei enthalten. Du kannst das Ziel jederzeit ändern oder entfernen.',
@@ -163,6 +163,16 @@ export const GUIDE: GuideSection[] = [
       '„Wiederherstellen“ führt eine Sicherung mit dem aktuellen Stand zusammen und überschreibt nichts. Die Datei enthält deine Depotdaten, Ziel, angenommene Rendite, Sparplan-Markierungen, Zielaufteilung, Notizen und die importierten ETF-Listen, aber keine Zugangsdaten.',
       'Einstellungen, die auf dem iPhone schon gesetzt sind, bleiben beim Wiederherstellen erhalten. Die Sicherung ergänzt nur, was fehlt.',
       'Ist die letzte Sicherung älter als vier Wochen, erinnert dich die App nach einem Abruf daran.',
+    ],
+  },
+  {
+    icon: 'chatbubble-ellipses-outline',
+    title: 'Feedback geben',
+    body: [
+      'Du testest über TestFlight – Feedback geht am einfachsten so: Mach in der App einen Screenshot. iOS bietet dir dann „Beta-Feedback teilen“ an; du kannst auf dem Bild markieren, was du meinst, und einen Kommentar dazuschreiben. Das landet direkt beim Entwickler.',
+      'Alternativ: Öffne die TestFlight-App, wähle Depot Tracker und tippe auf „Feedback senden“.',
+      'Wichtig: Auf Screenshots können echte Beträge zu sehen sein. Blende sie vorher mit dem Auge aus, wenn du das nicht möchtest.',
+      'Abstürze meldet TestFlight automatisch, sofern du dem beim Einrichten zugestimmt hast.',
     ],
   },
   {

@@ -165,6 +165,30 @@ export interface GoalProjection {
   strong: GoalScenario;
 }
 
+/** Länge des Korridor-Diagramms: höchstens 25 Jahre. */
+export const CORRIDOR_MAX_MONTHS = 300;
+
+/**
+ * Monatliche Verlaufspunkte der Hochrechnung, am Ziel gedeckelt: Die Linie steigt
+ * und wird am Wunschbetrag flach – so sieht man im Diagramm, wann sie ankommt.
+ */
+export function projectSeries(value: number, goal: number, monthlyRate: number, annualReturn: number, months: number): number[] {
+  const growth = Math.pow(1 + annualReturn, 1 / 12);
+  const points = [Math.min(value, goal)];
+  let v = value;
+  for (let m = 1; m <= months; m++) {
+    v = v * growth + monthlyRate;
+    points.push(Math.min(v, goal));
+  }
+  return points;
+}
+
+/** Zeitraum des Korridor-Diagramms: bis auch das vorsichtige Szenario ankommt, begrenzt auf 1 bis 25 Jahre. */
+export function corridorMonths(value: number, goal: number, monthlyRate: number, annualReturn: number): number {
+  const weak = monthsToGoal(value, goal, monthlyRate, Math.max(0, annualReturn - SCENARIO_SPREAD));
+  return Math.max(12, Math.min(CORRIDOR_MAX_MONTHS, weak ?? CORRIDOR_MAX_MONTHS));
+}
+
 export function projectGoal(value: number, goal: number, monthlyRate: number, asOf: string, annualReturn = DEFAULT_RETURN): GoalProjection {
   const month = (n: number | null) => (n === null ? null : monthBefore(asOf, -n));
   const scenario = (rate: number): GoalScenario => ({ rate, month: month(monthsToGoal(value, goal, monthlyRate, rate)) });

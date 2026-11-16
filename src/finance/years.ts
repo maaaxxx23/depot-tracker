@@ -93,6 +93,32 @@ export interface YearsOverview {
   };
 }
 
+export interface YearContribution {
+  isin: string;
+  /** Wertzuwachs dieses Wertpapiers im Jahr: Wertänderung minus Netto-Einzahlungen (Ausschüttungen zählen mit) */
+  gain: number;
+}
+
+/**
+ * Was hat das Jahr gemacht? Der Jahres-Gewinn, aufgeteilt auf die Wertpapiere.
+ * Die Beiträge summieren sich (bis auf weggelassene Cent-Beträge) zum Jahres-Gewinn.
+ */
+export function yearContributions(data: PortfolioData, year: YearResult): YearContribution[] {
+  const from = `${year.year - 1}-12-31`;
+  const to = year.running ? data.asOf : `${year.year}-12-31`;
+  const result: YearContribution[] = [];
+  for (const { isin } of data.instruments) {
+    const inYear = data.transactions.filter((t) => t.isin === isin && t.date.startsWith(`${year.year}-`) && t.date <= to);
+    const start = valueAt(data.transactions, data.prices, from, isin);
+    const end = valueAt(data.transactions, data.prices, to, isin);
+    if (start <= 0 && end <= 0 && !inYear.length) continue;
+    const netInflow = -inYear.reduce((s, t) => s + cashflow(t), 0);
+    const gain = end - start - netInflow;
+    if (Math.abs(gain) >= 0.5) result.push({ isin, gain });
+  }
+  return result.sort((a, b) => b.gain - a.gain);
+}
+
 export function analyzeYears(data: PortfolioData): YearsOverview {
   const { transactions, prices, asOf } = data;
   const { sales, openCost } = realizedSales(transactions);

@@ -639,6 +639,7 @@ export function DashboardScreen() {
         annualReturn={annualReturn}
         historicReturn={historicReturn}
         currentValue={result.endValue}
+        asOf={data.asOf}
         positions={positions}
         onChangeReturn={(rate) => {
           setAnnualReturn(rate);

@@ -3,7 +3,8 @@ import { Alert, Keyboard, Pressable, Text, TextInput, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons';
 import { withdrawalPreference } from '../../data/store';
 import { tapFeedback } from '../haptics';
-import { GoalProjection, MAX_RETURN, RETURN_STEP, Savings } from '../../finance/savings';
+import { corridorMonths, GoalProjection, MAX_RETURN, projectSeries, RETURN_STEP, Savings } from '../../finance/savings';
+import { LineChart } from '../LineChart';
 import {
   capitalToConsume,
   capitalToPreserve,
@@ -40,12 +41,14 @@ interface Props {
   historicReturn: number | null;
   /** Heutiger Depotwert, für die Entnahme-Modellrechnung */
   currentValue: number;
+  /** Stichtag der Daten, als Startpunkt des Korridor-Diagramms */
+  asOf: string;
   /** Positionen in der Reihenfolge der Startseite, für die Farben der Sparpläne */
   positions: PositionResult[];
 }
 
 /** Wunschbetrag festlegen, dazu die erkannten Sparpläne, die Hochrechnung und die Entnahme-Modellrechnung. */
-export function GoalSheet({ visible, onClose, savings, instruments, goal, projection, onChangeGoal, annualReturn, onChangeReturn, historicReturn, currentValue, positions }: Props) {
+export function GoalSheet({ visible, onClose, savings, instruments, goal, projection, onChangeGoal, annualReturn, onChangeReturn, historicReturn, currentValue, asOf, positions }: Props) {
   const { theme, styles } = useStyles();
   const { hidden } = usePrivacy();
   const [input, setInput] = useState('');
@@ -177,6 +180,28 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
       <Ionicons name={icon} size={22} color={theme.text} />
     </Pressable>
   );
+  // Korridor-Diagramm: drei Verläufe bis zum Wunschbetrag; die Linien werden dort flach
+  const corridor = (() => {
+    if (!projection || !goal || projection.remaining <= 0 || currentValue <= 0) return null;
+    const months = corridorMonths(currentValue, goal, savings.monthlyRate, annualReturn);
+    const start = Number(asOf.slice(0, 4)) * 12 + Number(asOf.slice(5, 7)) - 1;
+    const dates = Array.from({ length: months + 1 }, (_, m) => {
+      const index = start + m;
+      return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}-01`;
+    });
+    const line = (rate: number) => projectSeries(currentValue, goal, savings.monthlyRate, rate, months);
+    return {
+      dates,
+      endYear: dates[dates.length - 1].slice(0, 4),
+      series: [
+        { values: line(projection.weak.rate), color: theme.invested, dashed: true },
+        { values: line(projection.strong.rate), color: theme.invested, dashed: true },
+        // Die erwartete Linie zuletzt, damit sie über dem Korridor liegt
+        { values: line(annualReturn), color: theme.accent },
+      ],
+    };
+  })();
+
   // Was-wäre-wenn: ein Monat je Szenario; „erreicht“, sobald das Ziel schon steht
   const when = (month: string | null) => (projection && projection.remaining <= 0 ? 'erreicht' : month ? monthName(month) : 'über 50 Jahre');
   const projectionRows: DetailRow[] = projection
@@ -248,6 +273,18 @@ export function GoalSheet({ visible, onClose, savings, instruments, goal, projec
       {projectionRows.length > 0 && (
         <>
           <Text style={[styles.label, { fontWeight: '600', paddingHorizontal: 4, marginTop: 8 }]}>Hochrechnung</Text>
+          {corridor && (
+            <View style={[styles.card, { gap: 6 }]}>
+              <LineChart theme={theme} compact height={110} dates={corridor.dates} series={corridor.series} />
+              <View style={[styles.row, { justifyContent: 'space-between' }]}>
+                <Text style={styles.small}>heute</Text>
+                <Text style={styles.small}>{corridor.endYear}</Text>
+              </View>
+              <Text style={styles.small}>
+                Gold: erwartet ({shortPercent(annualReturn)}) · grau gestrichelt: vorsichtig bis stark. Jede Linie endet, wenn sie den Wunschbetrag erreicht.
+              </Text>
+            </View>
+          )}
           <DetailRows rows={projectionRows} />
         </>
       )}

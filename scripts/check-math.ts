@@ -2,11 +2,11 @@
 import { createDemoData } from '../src/demo/demoData';
 import { analyzePeriod, analyzePositions, buildSeries, priceAt, toDate } from '../src/finance/performance';
 import { xirr } from '../src/finance/xirr';
-import { analyzeYears, realizedSales } from '../src/finance/years';
+import { analyzeYears, realizedSales, yearContributions } from '../src/finance/years';
 import { estimateVorabpauschale, pauschaleYear } from '../src/finance/vorabpauschale';
 import { analyzeAllocation, catchUpAmount, currentAsTargets, splitPurchase } from '../src/finance/allocation';
 import { REVIEW_DAYS, reviewLastMonth, reviewToShow } from '../src/finance/monthReview';
-import { detectSavings, monthsToGoal, projectGoal } from '../src/finance/savings';
+import { corridorMonths, detectSavings, monthsToGoal, projectGoal, projectSeries } from '../src/finance/savings';
 import { capitalToConsume, capitalToPreserve, monthlyFromCapital, roundCapital } from '../src/finance/withdrawal';
 import { buildInsights, concentration, drawdownOfCurrentHoldings, nextMilestone, savingsStreak } from '../src/finance/insights';
 import { PortfolioData, Transaction } from '../src/types';
@@ -224,6 +224,24 @@ check(
   check('Ziel: vorsichtig stoppt bei 0 %', projectGoal(1000, 2000, 100, '2026-11-04', 0.02).weak.rate, 0);
   check('Ziel: stark stoppt bei der Obergrenze', projectGoal(1000, 2000, 100, '2026-11-04', 0.11).strong.rate, 0.12);
   check('Ziel: 0 % vorsichtig = ohne Kursgewinne', projectGoal(1000, 2000, 100, '2026-11-04', 0.03).weak.month === proj.withoutReturn ? 1 : 0, 1);
+
+  // Korridor-Diagramm
+  const corridorSeries = projectSeries(1000, 2000, 100, 0, 12);
+  check('Korridor: Start heute', corridorSeries[0], 1000);
+  check('Korridor: ohne Rendite wächst um die Rate', corridorSeries[5], 1500);
+  check('Korridor: am Ziel gedeckelt', Math.max(...corridorSeries), 2000);
+  check('Korridor: Länge = Monate + 1', corridorSeries.length, 13);
+  check('Korridor: Zeitraum endet mit dem vorsichtigen Szenario', corridorMonths(1000, 5000, 100, 0.05), monthsToGoal(1000, 5000, 100, 0.02)!);
+  check('Korridor: mindestens ein Jahr', corridorMonths(1000, 1100, 100, 0.05), 12);
+  check('Korridor: Unerreichbares wird auf 25 Jahre begrenzt', corridorMonths(1000, 10_000_000, 0, 0.03), 300);
+
+  // Jahres-Beiträge: die Summe der Positions-Beiträge ist der Jahres-Gewinn
+  for (const y of analyzeYears(demo).years.slice(0, 2)) {
+    check(`Beiträge ${y.year}: Summe = Jahres-Gewinn`, yearContributions(demo, y).reduce((s, c) => s + c.gain, 0), y.gain, 3);
+  }
+  const singlePos = makeData([buyTx('2025-02-01', 'ETF', 10)]);
+  const singleYear = analyzeYears(singlePos).years.find((y) => y.year === 2025)!;
+  check('Beiträge: eine Position trägt alles', yearContributions(singlePos, singleYear)[0]?.gain ?? 0, singleYear.gain, 1e-6);
 }
 
 // Entnahme-Modellrechnung

@@ -3,8 +3,9 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import { shareTransactionsCsv, shareYearReport } from '../../data/backup';
 import type { PositionResult } from '../../finance/performance';
 import type { PauschaleEstimate } from '../../finance/vorabpauschale';
-import type { YearsOverview } from '../../finance/years';
+import { yearContributions, YearsOverview } from '../../finance/years';
 import type { PortfolioData } from '../../types';
+import { positionColor } from './PositionList';
 import { eur, pct, signedEur } from '../format';
 import { tapFeedback } from '../haptics';
 import { PrivateText } from '../privacy';
@@ -73,10 +74,27 @@ export function YearSheet({ visible, onClose, overview, data, positions, benchma
       <DetailRows rows={totalRows} />
 
       {years.map((y) => {
+        // Was hat das Jahr gemacht? Der Gewinn, aufgeteilt auf die Wertpapiere (nur bei mehr als einem)
+        const contributions = yearContributions(data, y);
+        const nameOf = (isin: string) => data.instruments.find((i) => i.isin === isin)?.shortName ?? isin;
+        const colorOf = (isin: string) => {
+          const index = positions.findIndex((p) => p.instrument.isin === isin);
+          return index >= 0 ? positionColor(theme, index) : undefined;
+        };
         const rows: DetailRow[] = [
           { label: 'Rendite', hint: 'Kursentwicklung, unabhängig von Käufen und Verkäufen', value: pct(y.twr), color: signColor(theme, y.twr) },
           ...(benchmarkName && y.benchmarkReturn !== null ? [{ label: benchmarkName, value: pct(y.benchmarkReturn), color: theme.benchmark }] : []),
           { label: 'Gewinn', value: signedEur(y.gain), color: signColor(theme, y.gain), private: true },
+          ...(contributions.length > 1
+            ? contributions.map((c) => ({
+                label: nameOf(c.isin),
+                labelColor: colorOf(c.isin),
+                hint: 'Beitrag zum Gewinn',
+                value: signedEur(c.gain),
+                color: signColor(theme, c.gain),
+                private: true,
+              }))
+            : []),
           { label: 'Gekauft', value: eur(y.bought), private: true },
           ...(y.sold > 0
             ? [
