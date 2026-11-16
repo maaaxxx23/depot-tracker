@@ -106,14 +106,14 @@ export function buildInsights(data: PortfolioData, positions: PositionResult[], 
     if (review && (Math.abs(review.change) >= 1 || Math.abs(review.invested) >= 1)) {
       const parts: TextPart[] =
         Math.abs(review.invested) < 1
-          ? [`Dein ${monthWord(review.month)}:`, { amount: review.change, signed: true }, 'Wertentwicklung.']
+          ? [`Dein ${monthWord(review.month)}:`, { amount: review.change, signed: true, colored: true }, 'Wertentwicklung.']
           : [
               `Dein ${monthWord(review.month)}:`,
               { amount: review.change, signed: true },
               '– davon',
               { amount: Math.abs(review.invested) },
               review.invested >= 0 ? 'eingezahlt und' : 'entnommen und',
-              { amount: review.gain, signed: true },
+              { amount: review.gain, signed: true, colored: true },
               'Wertentwicklung.',
             ];
       insights.push({ id: 'month-review', tone: review.gain >= 0 ? 'good' : 'info', parts });

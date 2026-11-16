@@ -27,7 +27,7 @@ export interface PricePoint {
 export type PriceHistory = Record<string, PricePoint[]>;
 
 /** Textbaustein; Beträge bleiben Zahlen, damit die Oberfläche sie verbergen kann. */
-export type TextPart = string | { amount: number; signed?: boolean };
+export type TextPart = string | { amount: number; signed?: boolean; /** grün/rot je nach Vorzeichen */ colored?: boolean };
 
 export interface PortfolioData {
   instruments: Instrument[];
