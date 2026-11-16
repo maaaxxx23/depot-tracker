@@ -110,7 +110,7 @@ export function PositionSheet({ position, color, bankCost, prepaidTax, note, onN
             onNoteChange(text);
           }}
           multiline
-          placeholder="Warum hast du diese Position gekauft? Dein zukünftiges Ich liest hier nach."
+          placeholder="Warum gekauft?"
           placeholderTextColor={theme.muted}
           accessibilityLabel="Notiz zu dieser Position"
           style={{
@@ -126,7 +126,6 @@ export function PositionSheet({ position, color, bankCost, prepaidTax, note, onN
             textAlignVertical: 'top',
           }}
         />
-        <Text style={styles.small}>Bleibt auf dem iPhone und kommt mit in die Sicherungsdatei.</Text>
       </View>
 
       {/* Sparplan: automatisch erkannt oder von dir markiert; die App prüft weiter, ob wirklich gekauft wird */}
