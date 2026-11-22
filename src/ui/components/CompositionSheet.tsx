@@ -4,8 +4,9 @@ import type { FundComposition } from '../../data/holdingsImport';
 import { CompositionResult, displayName, Slice } from '../../finance/composition';
 import { assignHoldings, describeFund, matchScore } from '../../finance/holdingsMatch';
 import { industryBreakdown, industryInfo } from '../../finance/industries';
-import type { MoversResult } from '../../finance/movers';
+import { computeMovers, MoverRange } from '../../finance/movers';
 import type { IndustryCache } from '../../market/industries';
+import type { MoverCache } from '../../market/movers';
 import type { OverlapResult } from '../../finance/overlap';
 import type { PositionResult } from '../../finance/performance';
 import { dayMonth, pct, percent, signedEur, signedPoints } from '../format';
@@ -32,9 +33,9 @@ interface Props {
   compositions: Record<string, FundComposition>;
   /** Geschäftsbereiche der größten Firmen, soweit schon nachgeschlagen */
   industries: IndustryCache;
-  /** Tagesbewegung der größten Firmen samt Beitrag zum Depot */
-  movers: MoversResult;
-  /** Die Tagesbewegungen werden gerade bei Yahoo geladen */
+  /** Tages- und Wochenbewegung der größten Firmen (Zwischenspeicher) */
+  movers: MoverCache | null;
+  /** Die Bewegungen werden gerade bei Yahoo geladen */
   moversLoading: boolean;
   /** Lässt eine oder mehrere Bestandslisten auswählen und liest sie ein. null = abgebrochen. */
   onPick: (many: boolean) => Promise<PickedHoldings | null>;
@@ -86,6 +87,10 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
   const heading = [styles.label, { fontWeight: '600' as const, paddingHorizontal: 4, marginTop: 8 }];
   const funds = positions.filter((p) => p.instrument.kind !== 'Aktie');
   const depotValue = positions.reduce((s, p) => s + p.value, 0);
+  // Top-Bewegungen: letzter Handelstag oder die letzten fünf Handelstage
+  const [moverRange, setMoverRange] = useState<MoverRange>('day');
+  const moverDay = computeMovers(result.companies, movers, 'day');
+  const topMovers = moverRange === 'day' ? moverDay : computeMovers(result.companies, movers, 'week');
   const nameOf = (isin: string) => positions.find((p) => p.instrument.isin === isin)?.instrument.shortName ?? isin;
   const describe = (fund: FundComposition) => describeFund(fund, displayName);
   // Langer und kurzer Name zusammen: Banken kürzen mal den einen, mal den anderen ab
@@ -203,33 +208,72 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
               Ausgewertet sind {percent(result.covered)} deines Depots. Für den Rest fehlt eine Bestandsliste (siehe unten).
             </Text>
           )}
-          {movers.rows.length > 0 ? (
+          {moverDay.rows.length > 0 ? (
             <>
               <Text style={heading}>Top-Bewegungen</Text>
-              <DetailRows
-                rows={movers.rows.map((r) => {
-                  const color = r.change > 0 ? theme.positive : r.change < 0 ? theme.negative : theme.text;
-                  return {
-                    label: r.label,
-                    hint: `≈ ${signedPoints(r.contribution)} für dein Depot`,
-                    value: pct(r.change),
-                    color,
-                    valueHint: `≈ ${signedEur(depotValue * r.contribution)}`,
-                    valueHintColor: color,
-                    valueHintPrivate: true,
-                  };
+              <View style={[styles.row, { gap: 8 }]}>
+                {(
+                  [
+                    ['day', 'Heute'],
+                    ['week', 'Woche'],
+                  ] as const
+                ).map(([range, name]) => {
+                  const active = moverRange === range;
+                  return (
+                    <Pressable
+                      key={range}
+                      onPress={() => {
+                        if (active) return;
+                        tapFeedback();
+                        setMoverRange(range);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      style={({ pressed }) => ({
+                        paddingVertical: 7,
+                        paddingHorizontal: 12,
+                        borderRadius: radius.control,
+                        backgroundColor: active ? theme.accent : theme.chip,
+                        opacity: pressed ? 0.7 : 1,
+                      })}
+                    >
+                      <Text style={{ color: active ? theme.onAccent : theme.text, fontSize: font.chip, fontWeight: '600' }}>{name}</Text>
+                    </Pressable>
+                  );
                 })}
-              />
-              <View style={{ paddingHorizontal: 4 }}>
-                <RichText
-                  style={styles.small}
-                  parts={[
-                    `Zusammen bewegen diese Firmen dein Depot rechnerisch um ${signedPoints(movers.totalContribution)} oder`,
-                    { amount: depotValue * movers.totalContribution, signed: true },
-                    `. Sie machen ${percent(movers.totalWeight)} deines Depots aus; was die vielen kleineren Firmen beitragen, zeigt die Liste nicht. Tagesbewegung an der Heimatbörse${movers.date ? `, Handelstag ${dayMonth(movers.date)}` : ''} · Beitrag = Gewicht × Bewegung, eine Näherung.`,
-                  ]}
-                />
               </View>
+              {topMovers.rows.length > 0 ? (
+                <>
+                  <DetailRows
+                    rows={topMovers.rows.map((r) => {
+                      const color = r.change > 0 ? theme.positive : r.change < 0 ? theme.negative : theme.text;
+                      return {
+                        label: r.label,
+                        hint: `≈ ${signedPoints(r.contribution)} für dein Depot`,
+                        value: pct(r.change),
+                        color,
+                        valueHint: `≈ ${signedEur(depotValue * r.contribution)}`,
+                        valueHintColor: color,
+                        valueHintPrivate: true,
+                      };
+                    })}
+                  />
+                  <View style={{ paddingHorizontal: 4 }}>
+                    <RichText
+                      style={styles.small}
+                      parts={[
+                        `Zusammen bewegen diese Firmen dein Depot rechnerisch um ${signedPoints(topMovers.totalContribution)} oder`,
+                        { amount: depotValue * topMovers.totalContribution, signed: true },
+                        `. Sie machen ${percent(topMovers.totalWeight)} deines Depots aus; was die vielen kleineren Firmen beitragen, zeigt die Liste nicht. ${
+                          moverRange === 'day' ? 'Bewegung am letzten Handelstag ihrer Heimatbörse' : 'Bewegung über die letzten fünf Handelstage'
+                        }${topMovers.date ? ` (Stand ${dayMonth(topMovers.date)})` : ''} · Beitrag = Gewicht × Bewegung, eine Näherung.`,
+                      ]}
+                    />
+                  </View>
+                </>
+              ) : (
+                <Text style={[styles.small, { paddingHorizontal: 4 }]}>Die Wochen-Werte fehlen noch und kommen mit dem nächsten Kurs-Abruf.</Text>
+              )}
             </>
           ) : (
             moversLoading && (

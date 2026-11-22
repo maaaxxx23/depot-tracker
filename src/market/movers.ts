@@ -15,6 +15,8 @@ export const MAX_MOVERS = 10;
 export interface MoverQuote {
   /** Tagesbewegung als Bruchteil (−0,051 = −5,1 %), gegenüber dem Vortagesschluss der Heimatbörse */
   change: number;
+  /** Bewegung über die letzten fünf Handelstage; null, wenn Yahoo keine Basis liefert */
+  weekChange: number | null;
   /** Handelstag, auf den sich die Bewegung bezieht */
   date: string;
 }
@@ -46,21 +48,39 @@ export async function findEquitySymbol(fetchImpl: FetchLike, name: string): Prom
 
 /** Größere Sprünge gelten als Datenpanne und werden verworfen. */
 const MAX_DAY_MOVE = 0.5;
+const MAX_WEEK_MOVE = 0.75;
 
-/** Tagesbewegung eines Kürzels; die Prozentzahl braucht keine Währungsumrechnung. */
-export async function fetchDayChange(fetchImpl: FetchLike, symbol: string): Promise<MoverQuote> {
-  const res = await fetchImpl(`${BASE}/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1d`, { headers: HEADERS });
+const isoDay = (seconds: number, offset: number) => new Date((seconds + offset) * 1000).toISOString().slice(0, 10);
+
+/**
+ * Tages- und Wochenbewegung eines Kürzels aus einer Anfrage (die letzten fünf Handelstage).
+ * Die Prozentzahlen brauchen keine Währungsumrechnung.
+ */
+export async function fetchChanges(fetchImpl: FetchLike, symbol: string): Promise<MoverQuote> {
+  const res = await fetchImpl(`${BASE}/v8/finance/chart/${encodeURIComponent(symbol)}?range=5d&interval=1d`, { headers: HEADERS });
   if (!res.ok) throw new Error(`Yahoo antwortet mit ${res.status}`);
-  const meta = (await res.json())?.chart?.result?.[0]?.meta;
+  const result = (await res.json())?.chart?.result?.[0];
+  const meta = result?.meta;
   const price = meta?.regularMarketPrice;
-  const previous = meta?.chartPreviousClose;
   const time = meta?.regularMarketTime;
-  if (typeof price !== 'number' || !(price > 0) || typeof previous !== 'number' || !(previous > 0) || typeof time !== 'number') {
-    throw new Error(`Keine Tagesbewegung für ${symbol}`);
+  if (typeof price !== 'number' || !(price > 0) || typeof time !== 'number') throw new Error(`Kein Kurs für ${symbol}`);
+  const offset: number = meta.gmtoffset ?? 0;
+  const date = isoDay(time, offset);
+  // Vortagesschluss: der letzte Tagesschluss vor dem Handelstag des aktuellen Kurses
+  const closes: (number | null)[] = result?.indicators?.quote?.[0]?.close ?? [];
+  const timestamps: number[] = result?.timestamp ?? [];
+  let previous: number | null = null;
+  for (let i = 0; i < timestamps.length; i++) {
+    const close = closes[i];
+    if (isoDay(timestamps[i], offset) < date && typeof close === 'number' && isFinite(close) && close > 0) previous = close;
   }
+  if (previous === null) throw new Error(`Kein Vortageskurs für ${symbol}`);
   const change = price / previous - 1;
   if (Math.abs(change) > MAX_DAY_MOVE) throw new Error(`Unplausible Tagesbewegung für ${symbol}`);
-  return { change, date: new Date((time + (meta.gmtoffset ?? 0)) * 1000).toISOString().slice(0, 10) };
+  // Wochenbasis: der Schlusskurs vor dem ersten der fünf Handelstage; Yahoo liefert ihn als chartPreviousClose mit
+  const weekBase = meta.chartPreviousClose;
+  const weekChange = typeof weekBase === 'number' && weekBase > 0 ? price / weekBase - 1 : null;
+  return { change, weekChange: weekChange !== null && Math.abs(weekChange) <= MAX_WEEK_MOVE ? weekChange : null, date };
 }
 
 const MAX_AGE_MS = 15 * 60 * 1000;
@@ -93,7 +113,7 @@ export async function loadMovers(fetchImpl: FetchLike, companies: CompanyQuery[]
       }
       const symbol = symbols[c.key];
       if (!symbol) continue;
-      quotes[c.key] = await fetchDayChange(fetchImpl, symbol);
+      quotes[c.key] = await fetchChanges(fetchImpl, symbol);
       loaded = true;
     } catch {
       // Diese Firma überspringen; offline schlagen alle fehl und der alte Stand bleibt

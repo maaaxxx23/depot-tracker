@@ -440,8 +440,17 @@ async function main() {
   // --- Top-Bewegungen: Tagesbewegung der größten Firmen (Yahoo nachgebaut) ---
   {
     const unix = (iso: string) => Date.parse(iso) / 1000;
-    const day = (price: number, previous: number) => ({
-      chart: { result: [{ meta: { regularMarketPrice: price, chartPreviousClose: previous, regularMarketTime: unix('2026-11-20T20:00:00Z'), gmtoffset: -18000 } }] },
+    // Fünf Handelstage (Mo 16. – Fr 20.); der letzte Schluss ist der aktuelle Kurs, chartPreviousClose die Wochenbasis
+    const day = (price: number, closes: (number | null)[], weekBase: number) => ({
+      chart: {
+        result: [
+          {
+            meta: { regularMarketPrice: price, chartPreviousClose: weekBase, regularMarketTime: unix('2026-11-20T20:00:00Z'), gmtoffset: -18000 },
+            timestamp: [16, 17, 18, 19, 20].map((d) => unix(`2026-11-${d}T14:30:00Z`)),
+            indicators: { quote: [{ close: closes }] },
+          },
+        ],
+      },
     });
     const searches: Record<string, unknown[]> = {
       'NVIDIA': [
@@ -452,7 +461,8 @@ async function main() {
       'Kaputt AG': [{ quoteType: 'EQUITY', symbol: 'TOT', longname: 'Kaputt AG' }],
       'Zappelig SE': [{ quoteType: 'EQUITY', symbol: 'ZAP', longname: 'Zappelig SE' }],
     };
-    const days: Record<string, unknown> = { NVDA: day(95, 100), ZAP: day(200, 100) }; // ZAP: +100 % → unplausibel
+    // NVDA: Vortag 100 (die Lücke am Dienstag wird übersprungen), Wochenbasis 90; ZAP: +100 % am Tag → unplausibel
+    const days: Record<string, unknown> = { NVDA: day(95, [91, null, 93, 100, 95], 90), ZAP: day(200, [100, 100, 100, 100, 200], 95) };
     const urls: string[] = [];
     const yahoo = async (url: string) => {
       urls.push(url);
@@ -471,6 +481,7 @@ async function main() {
     const now = new Date('2026-11-20T21:00:00Z');
     const cache = await loadMovers(yahoo, companies, null, now);
     check('Bewegungen: Tagesbewegung berechnet', Math.abs((cache?.quotes.NVIDIA?.change ?? 0) - -0.05) < 1e-9 && cache?.quotes.NVIDIA?.date === '2026-11-20');
+    check('Bewegungen: Wochenbewegung aus derselben Antwort', Math.abs((cache?.quotes.NVIDIA?.weekChange ?? 0) - (95 / 90 - 1)) < 1e-9);
     check('Bewegungen: falsches erstes Wort nicht übernommen', cache?.symbols.SAP === null);
     check('Bewegungen: toter Kurs blockiert die anderen nicht', cache?.symbols.KAPUTT === 'TOT' && !cache?.quotes.KAPUTT && cache?.quotes.NVIDIA !== undefined);
     check('Bewegungen: unplausibler Sprung verworfen', !cache?.quotes.ZAPPELIG);

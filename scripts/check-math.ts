@@ -254,7 +254,7 @@ check(
   const cache = {
     quotedAt: '2026-11-20T21:00:00.000Z',
     symbols: { APPLE: 'AAPL', NVIDIA: 'NVDA' },
-    quotes: { APPLE: { change: 0.01, date: '2026-11-19' }, NVIDIA: { change: -0.05, date: '2026-11-20' } },
+    quotes: { APPLE: { change: 0.01, weekChange: 0.03, date: '2026-11-19' }, NVIDIA: { change: -0.05, weekChange: null, date: '2026-11-20' } },
   };
   const movers = computeMovers([slice('APPLE', 0.05), slice('NVIDIA', 0.04), slice('OHNE', 0.03)], cache);
   check('Bewegungen: größter Beitrag zuerst', movers.rows[0]?.contribution ?? 0, -0.002, 1e-12);
@@ -263,6 +263,9 @@ check(
   check('Bewegungen: abgedecktes Gewicht nur mit Kurs', movers.totalWeight, 0.09, 1e-12);
   check('Bewegungen: jüngster Handelstag', movers.date === '2026-11-20' ? 1 : 0, 1);
   check('Bewegungen: ohne Kurse leer', computeMovers([slice('APPLE', 0.05)], null).rows.length, 0);
+  const week = computeMovers([slice('APPLE', 0.05), slice('NVIDIA', 0.04)], cache, 'week');
+  check('Bewegungen: Woche nutzt den Wochenwert', week.rows[0]?.contribution ?? 0, 0.05 * 0.03, 1e-12);
+  check('Bewegungen: Woche ohne Wochenwert fehlt', week.rows.length, 1);
 }
 
 // Entnahme-Modellrechnung

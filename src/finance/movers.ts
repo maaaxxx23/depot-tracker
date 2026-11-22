@@ -5,10 +5,13 @@ import type { MoverCache } from '../market/movers';
 import { MAX_MOVERS } from '../market/movers';
 import type { CompanySlice } from './composition';
 
+/** Zeitraum der gezeigten Bewegung: letzter Handelstag oder die letzten fünf Handelstage */
+export type MoverRange = 'day' | 'week';
+
 export interface MoverRow {
   key: string;
   label: string;
-  /** Tagesbewegung der Aktie als Bruchteil */
+  /** Bewegung der Aktie im gewählten Zeitraum als Bruchteil */
   change: number;
   /** Rechnerischer Beitrag zum Depot in Bruchteilen (Gewicht × Bewegung) */
   contribution: number;
@@ -25,14 +28,16 @@ export interface MoversResult {
   date: string | null;
 }
 
-export function computeMovers(companies: CompanySlice[], cache: MoverCache | null): MoversResult {
+export function computeMovers(companies: CompanySlice[], cache: MoverCache | null, range: MoverRange = 'day'): MoversResult {
   const rows: MoverRow[] = [];
   let totalWeight = 0;
   let date: string | null = null;
   for (const c of companies.slice(0, MAX_MOVERS)) {
     const quote = cache?.quotes[c.key];
-    if (!quote) continue;
-    rows.push({ key: c.key, label: c.label, change: quote.change, contribution: c.weight * quote.change });
+    // ?? null: ältere Stände ohne Wochenwert
+    const change = quote ? (range === 'week' ? quote.weekChange ?? null : quote.change) : null;
+    if (quote === undefined || change === null) continue;
+    rows.push({ key: c.key, label: c.label, change, contribution: c.weight * change });
     totalWeight += c.weight;
     if (!date || quote.date > date) date = quote.date;
   }

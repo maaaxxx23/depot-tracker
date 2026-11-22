@@ -9,7 +9,6 @@ import type { FundComposition } from '../data/holdingsImport';
 import { benchmarkPreference, chartModePreference, compositionStore, industryStore, moversStore, assumedReturnPreference, goalPreference, loadSettings, monthReviewCollapsed, monthReviewDismissed, monthReviewPreference, positionNotes, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
 import { IndustryCache, loadIndustries } from '../market/industries';
 import { loadMovers, MoverCache, moversStale } from '../market/movers';
-import { computeMovers } from '../finance/movers';
 import { refreshMarket } from '../market/refresh';
 import type { MarketData } from '../market/yahoo';
 import { createDemoData } from '../demo/demoData';
@@ -289,7 +288,6 @@ export function DashboardScreen() {
       cancelled = true;
     };
   }, [sheet, composition]);
-  const topMovers = useMemo(() => computeMovers(composition.companies, movers), [composition, movers]);
   const saveCompositions = (next: Record<string, FundComposition>) => {
     setCompositions(next);
     compositionStore.set(next).catch(() => {});
@@ -646,7 +644,7 @@ export function DashboardScreen() {
         overlap={overlap}
         compositions={compositions}
         industries={industries}
-        movers={topMovers}
+        movers={movers}
         moversLoading={moversLoading}
         onPick={pickHoldings}
         onSave={(lists) => saveCompositions({ ...compositions, ...lists })}
