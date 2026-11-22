@@ -4,10 +4,11 @@ import type { FundComposition } from '../../data/holdingsImport';
 import { CompositionResult, displayName, Slice } from '../../finance/composition';
 import { assignHoldings, describeFund, matchScore } from '../../finance/holdingsMatch';
 import { industryBreakdown, industryInfo } from '../../finance/industries';
+import type { MoversResult } from '../../finance/movers';
 import type { IndustryCache } from '../../market/industries';
 import type { OverlapResult } from '../../finance/overlap';
 import type { PositionResult } from '../../finance/performance';
-import { percent } from '../format';
+import { dayMonth, pct, percent, signedPoints } from '../format';
 import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
 import { font, radius, useStyles } from '../styles';
@@ -30,6 +31,10 @@ interface Props {
   compositions: Record<string, FundComposition>;
   /** Geschäftsbereiche der größten Firmen, soweit schon nachgeschlagen */
   industries: IndustryCache;
+  /** Tagesbewegung der größten Firmen samt Beitrag zum Depot */
+  movers: MoversResult;
+  /** Die Tagesbewegungen werden gerade bei Yahoo geladen */
+  moversLoading: boolean;
   /** Lässt eine oder mehrere Bestandslisten auswählen und liest sie ein. null = abgebrochen. */
   onPick: (many: boolean) => Promise<PickedHoldings | null>;
   /** Speichert Listen zu den angegebenen ISINs (ersetzt vorhandene) */
@@ -73,7 +78,7 @@ interface Draft {
 }
 
 /** Länder, Branchen und größte Firmen über das ganze Depot, dazu der Import der Bestandslisten je ETF. */
-export function CompositionSheet({ visible, onClose, positions, result, overlap, compositions, industries, onPick, onSave, onRemove }: Props) {
+export function CompositionSheet({ visible, onClose, positions, result, overlap, compositions, industries, movers, moversLoading, onPick, onSave, onRemove }: Props) {
   const { theme, styles } = useStyles();
   const [busy, setBusy] = useState(false);
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
@@ -195,6 +200,28 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
             <Text style={[styles.small, { paddingHorizontal: 4 }]}>
               Ausgewertet sind {percent(result.covered)} deines Depots. Für den Rest fehlt eine Bestandsliste (siehe unten).
             </Text>
+          )}
+          {movers.rows.length > 0 ? (
+            <>
+              <Text style={heading}>Top-Bewegungen</Text>
+              <DetailRows
+                rows={movers.rows.map((r) => ({
+                  label: r.label,
+                  hint: `≈ ${signedPoints(r.contribution)} für dein Depot`,
+                  value: pct(r.change),
+                  color: r.change > 0 ? theme.positive : r.change < 0 ? theme.negative : theme.text,
+                }))}
+              />
+              <Text style={[styles.small, { paddingHorizontal: 4 }]}>
+                Zusammen bewegen diese Firmen dein Depot rechnerisch um {signedPoints(movers.totalContribution)}. Sie machen {percent(movers.totalWeight)} deines
+                Depots aus; was die vielen kleineren Firmen beitragen, zeigt die Liste nicht. Tagesbewegung an der Heimatbörse
+                {movers.date ? `, Handelstag ${dayMonth(movers.date)}` : ''} · Beitrag = Gewicht × Bewegung, eine Näherung.
+              </Text>
+            </>
+          ) : (
+            moversLoading && (
+              <Text style={[styles.small, { paddingHorizontal: 4 }]}>Die Tagesbewegungen der größten Firmen werden gerade bei Yahoo geladen …</Text>
+            )
           )}
           <Text style={heading}>Länder</Text>
           <Bars slices={limited('countries', withRest(countries))} color={theme.accent} />

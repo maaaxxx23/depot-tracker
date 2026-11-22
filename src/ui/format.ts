@@ -15,6 +15,9 @@ export const dayMonth = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}
 /** Differenz zweier Renditen in Prozentpunkten, ohne Vorzeichen: „5,7 %-Pkt.“ */
 export const points = (n: number) => `${(Math.abs(n) * 100).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %-Pkt.`;
 
+/** Kleiner Beitrag in Prozentpunkten mit Vorzeichen: „−0,45 %-Pkt.“ */
+export const signedPoints = (n: number) => `${n > 0 ? '+' : ''}${(n * 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %-Pkt.`;
+
 export const dateTime = (d: Date) =>
   `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 

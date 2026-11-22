@@ -15,6 +15,7 @@ import { addCsvTransactions, decodeCsv, germanNumber, instrumentFromText, knownI
 import { buildTransactionsCsv, buildYearReportHtml } from '../src/data/report';
 import type { YearsOverview } from '../src/finance/years';
 import type { PortfolioData } from '../src/types';
+import { loadMovers, MAX_MOVERS, moversStale } from '../src/market/movers';
 import { BENCHMARK, BENCHMARKS, fetchChart, findSymbol, loadMarketData, loadQuotes, needsRefresh, quotesStale } from '../src/market/yahoo';
 
 let failed = 0;
@@ -434,6 +435,60 @@ async function main() {
     // Kurs älter als der Abruf → kein Ersatz, Stand bleibt der Abruf
     const old = mapPortfolio(raw, [], '2026-11-09', '2026-11-09T21:00:00.000Z', market);
     check('Älterer Kurs ersetzt den Abruf nicht', old.asOf === '2026-11-09' && old.source.kind === 'comdirect' && !old.source.pricedAt && analyzePeriod(old, null).endValue === 920);
+  }
+
+  // --- Top-Bewegungen: Tagesbewegung der größten Firmen (Yahoo nachgebaut) ---
+  {
+    const unix = (iso: string) => Date.parse(iso) / 1000;
+    const day = (price: number, previous: number) => ({
+      chart: { result: [{ meta: { regularMarketPrice: price, chartPreviousClose: previous, regularMarketTime: unix('2026-11-20T20:00:00Z'), gmtoffset: -18000 } }] },
+    });
+    const searches: Record<string, unknown[]> = {
+      'NVIDIA': [
+        { quoteType: 'ETF', symbol: 'FALSCH', longname: 'NVIDIA ETF' }, // kein EQUITY
+        { quoteType: 'EQUITY', symbol: 'NVDA', longname: 'NVIDIA Corporation' },
+      ],
+      'SAP': [{ quoteType: 'EQUITY', symbol: 'SAP-FALSCH', longname: 'Saputo Inc' }], // anderes erstes Wort
+      'Kaputt AG': [{ quoteType: 'EQUITY', symbol: 'TOT', longname: 'Kaputt AG' }],
+      'Zappelig SE': [{ quoteType: 'EQUITY', symbol: 'ZAP', longname: 'Zappelig SE' }],
+    };
+    const days: Record<string, unknown> = { NVDA: day(95, 100), ZAP: day(200, 100) }; // ZAP: +100 % → unplausibel
+    const urls: string[] = [];
+    const yahoo = async (url: string) => {
+      urls.push(url);
+      const q = new URL(url);
+      if (q.pathname.includes('/search')) return new Response(JSON.stringify({ quotes: searches[q.searchParams.get('q')!] ?? [] }));
+      const body = days[decodeURIComponent(q.pathname.split('/').pop()!)];
+      return body ? new Response(JSON.stringify(body)) : new Response('', { status: 404 });
+    };
+
+    const companies = [
+      { key: 'NVIDIA', label: 'NVIDIA' },
+      { key: 'SAP', label: 'SAP' },
+      { key: 'KAPUTT', label: 'Kaputt AG' },
+      { key: 'ZAPPELIG', label: 'Zappelig SE' },
+    ];
+    const now = new Date('2026-11-20T21:00:00Z');
+    const cache = await loadMovers(yahoo, companies, null, now);
+    check('Bewegungen: Tagesbewegung berechnet', Math.abs((cache?.quotes.NVIDIA?.change ?? 0) - -0.05) < 1e-9 && cache?.quotes.NVIDIA?.date === '2026-11-20');
+    check('Bewegungen: falsches erstes Wort nicht übernommen', cache?.symbols.SAP === null);
+    check('Bewegungen: toter Kurs blockiert die anderen nicht', cache?.symbols.KAPUTT === 'TOT' && !cache?.quotes.KAPUTT && cache?.quotes.NVIDIA !== undefined);
+    check('Bewegungen: unplausibler Sprung verworfen', !cache?.quotes.ZAPPELIG);
+    check('Bewegungen: frisch → kein Neuladen', (await loadMovers(yahoo, companies, cache!, new Date('2026-11-20T21:10:00Z'))) === null && !moversStale(cache, new Date('2026-11-20T21:10:00Z')));
+    const before = urls.filter((u) => u.includes('/search')).length;
+    const again = await loadMovers(yahoo, companies, cache!, new Date('2026-11-20T21:20:00Z'));
+    const sameDay = urls.filter((u) => u.includes('/search')).length;
+    check('Bewegungen: Kürzel bleiben gemerkt, keine neue Suche am selben Tag', again !== null && sameDay === before);
+    await loadMovers(yahoo, companies, again!, new Date('2026-11-21T09:00:00Z'));
+    check('Bewegungen: erfolglose Suche am nächsten Tag wiederholt', urls.filter((u) => u.includes('/search')).length > sameDay);
+    const offline = async (): Promise<Response> => {
+      throw new Error('offline');
+    };
+    check('Bewegungen: offline → alter Stand bleibt', (await loadMovers(offline, companies, cache!, new Date('2026-11-21T09:00:00Z'))) === null);
+    const countBefore = urls.length;
+    await loadMovers(yahoo, Array.from({ length: 15 }, (_, i) => ({ key: `F${i}`, label: `Firma ${i}` })), null, new Date('2026-11-22T10:00:00Z'));
+    // Je unbekannter Firma zwei Suchversuche (Anzeigename, bereinigter Name), aber nur für die ersten zehn
+    check('Bewegungen: höchstens zehn Firmen abgefragt', urls.length - countBefore === 20 && MAX_MOVERS === 10, String(urls.length - countBefore));
   }
 
   // --- CSV-Import der Depotumsätze (Format wie im Export von comdirect.de, Zahlen erfunden) ---

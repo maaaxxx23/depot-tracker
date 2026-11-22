@@ -6,8 +6,10 @@ import { mapPortfolio } from '../comdirect/portfolio';
 import { localDate } from '../comdirect/sync';
 import { backupDue, exportBackup, pickHoldings } from '../data/backup';
 import type { FundComposition } from '../data/holdingsImport';
-import { benchmarkPreference, chartModePreference, compositionStore, industryStore, assumedReturnPreference, goalPreference, loadSettings, monthReviewCollapsed, monthReviewDismissed, monthReviewPreference, positionNotes, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
+import { benchmarkPreference, chartModePreference, compositionStore, industryStore, moversStore, assumedReturnPreference, goalPreference, loadSettings, monthReviewCollapsed, monthReviewDismissed, monthReviewPreference, positionNotes, savingsMarks, targetSharesPreference, lastBackup, loadStored, marketCache, StoredPortfolio, welcomeSeen } from '../data/store';
 import { IndustryCache, loadIndustries } from '../market/industries';
+import { loadMovers, MoverCache, moversStale } from '../market/movers';
+import { computeMovers } from '../finance/movers';
 import { refreshMarket } from '../market/refresh';
 import type { MarketData } from '../market/yahoo';
 import { createDemoData } from '../demo/demoData';
@@ -157,6 +159,10 @@ export function DashboardScreen() {
   const [industriesLoaded, setIndustriesLoaded] = useState(false);
   const industriesRef = useRef<IndustryCache>({});
   industriesRef.current = industries;
+  const [movers, setMovers] = useState<MoverCache | null>(null);
+  const [moversLoading, setMoversLoading] = useState(false);
+  const moversRef = useRef<MoverCache | null>(null);
+  moversRef.current = movers;
 
   // Ziel, Rendite und Sparplan-Markierungen; auch nach dem Wiederherstellen einer Sicherung neu lesen
   const loadPreferences = () =>
@@ -196,6 +202,7 @@ export function DashboardScreen() {
       .then(setIndustries)
       .catch(() => {})
       .finally(() => setIndustriesLoaded(true));
+    moversStore.get().then(setMovers).catch(() => {});
     loadStored()
       .then((s) => s && setStored(s))
       .catch(() => {});
@@ -259,6 +266,30 @@ export function DashboardScreen() {
       cancelled = true;
     };
   }, [composition, industriesLoaded]);
+  // Tagesbewegungen der größten Firmen beim Öffnen von „Was steckt drin“ auffrischen (höchstens alle 15 Minuten)
+  const loadingMovers = useRef(false);
+  useEffect(() => {
+    if (sheet !== 'composition' || loadingMovers.current || !composition.companies.length) return;
+    if (!moversStale(moversRef.current)) return;
+    let cancelled = false;
+    loadingMovers.current = true;
+    setMoversLoading(true);
+    loadMovers(fetch, composition.companies.map((c) => ({ key: c.key, label: c.label })), moversRef.current)
+      .then((next) => {
+        if (!next) return;
+        moversStore.set(next).catch(() => {});
+        if (!cancelled) setMovers(next);
+      })
+      .catch(() => {})
+      .finally(() => {
+        loadingMovers.current = false;
+        if (!cancelled) setMoversLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sheet, composition]);
+  const topMovers = useMemo(() => computeMovers(composition.companies, movers), [composition, movers]);
   const saveCompositions = (next: Record<string, FundComposition>) => {
     setCompositions(next);
     compositionStore.set(next).catch(() => {});
@@ -615,6 +646,8 @@ export function DashboardScreen() {
         overlap={overlap}
         compositions={compositions}
         industries={industries}
+        movers={topMovers}
+        moversLoading={moversLoading}
         onPick={pickHoldings}
         onSave={(lists) => saveCompositions({ ...compositions, ...lists })}
         onRemove={(isin) => saveCompositions(Object.fromEntries(Object.entries(compositions).filter(([key]) => key !== isin)))}
@@ -683,6 +716,7 @@ export function DashboardScreen() {
           setMarket(null);
           setCompositions({});
           setIndustries({});
+          setMovers(null);
           setSheet(null);
         }}
       />

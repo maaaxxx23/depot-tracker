@@ -7,6 +7,7 @@ import { estimateVorabpauschale, pauschaleYear } from '../src/finance/vorabpausc
 import { analyzeAllocation, catchUpAmount, currentAsTargets, splitPurchase } from '../src/finance/allocation';
 import { REVIEW_DAYS, reviewLastMonth, reviewToShow } from '../src/finance/monthReview';
 import { averageAnnualReturn, corridorMonths, detectSavings, monthsToGoal, projectGoal, projectSeries } from '../src/finance/savings';
+import { computeMovers } from '../src/finance/movers';
 import { capitalToConsume, capitalToPreserve, monthlyFromCapital, roundCapital } from '../src/finance/withdrawal';
 import { buildInsights, concentration, drawdownOfCurrentHoldings, nextMilestone, savingsStreak } from '../src/finance/insights';
 import { PortfolioData, Transaction } from '../src/types';
@@ -245,6 +246,23 @@ check(
   const singlePos = makeData([buyTx('2025-02-01', 'ETF', 10)]);
   const singleYear = analyzeYears(singlePos).years.find((y) => y.year === 2025)!;
   check('Beiträge: eine Position trägt alles', yearContributions(singlePos, singleYear)[0]?.gain ?? 0, singleYear.gain, 1e-6);
+}
+
+// Top-Bewegungen: Beitrag zum Depot = Gewicht der Firma × Tagesbewegung ihrer Aktie
+{
+  const slice = (key: string, weight: number) => ({ key, label: key, weight, sector: '', country: '', sources: 1 });
+  const cache = {
+    quotedAt: '2026-11-20T21:00:00.000Z',
+    symbols: { APPLE: 'AAPL', NVIDIA: 'NVDA' },
+    quotes: { APPLE: { change: 0.01, date: '2026-11-19' }, NVIDIA: { change: -0.05, date: '2026-11-20' } },
+  };
+  const movers = computeMovers([slice('APPLE', 0.05), slice('NVIDIA', 0.04), slice('OHNE', 0.03)], cache);
+  check('Bewegungen: größter Beitrag zuerst', movers.rows[0]?.contribution ?? 0, -0.002, 1e-12);
+  check('Bewegungen: Firma ohne Kurs fehlt', movers.rows.length, 2);
+  check('Bewegungen: Summe der Beiträge', movers.totalContribution, -0.0015, 1e-12);
+  check('Bewegungen: abgedecktes Gewicht nur mit Kurs', movers.totalWeight, 0.09, 1e-12);
+  check('Bewegungen: jüngster Handelstag', movers.date === '2026-11-20' ? 1 : 0, 1);
+  check('Bewegungen: ohne Kurse leer', computeMovers([slice('APPLE', 0.05)], null).rows.length, 0);
 }
 
 // Entnahme-Modellrechnung

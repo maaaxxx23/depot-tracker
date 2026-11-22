@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RawPortfolio, Snapshot } from '../comdirect/portfolio';
 import type { VisitSnapshot } from '../finance/visit';
 import type { IndustryCache } from '../market/industries';
+import type { MoverCache } from '../market/movers';
 import type { MarketData } from '../market/yahoo';
 import type { WithdrawalWish } from '../finance/withdrawal';
 import type { BackupLists, BackupSettings, StoredPortfolio } from './backupFormat';
@@ -20,6 +21,7 @@ const KEYS = {
   visitBaseline: 'visit-baseline-v1',
   compositions: 'fund-compositions-v1',
   industries: 'company-industries-v1',
+  movers: 'top-movers-v1',
 };
 
 // Bleiben auch nach „Zugang löschen“ erhalten (keine Depotdaten)
@@ -109,6 +111,12 @@ export const compositionStore = {
 export const industryStore = {
   get: () => readJson<IndustryCache>(KEYS.industries, {}),
   set: (cache: IndustryCache) => AsyncStorage.setItem(KEYS.industries, JSON.stringify(cache)),
+};
+
+/** Tagesbewegungen der größten Firmen samt gefundener Börsenkürzel (von Yahoo). */
+export const moversStore = {
+  get: () => readJson<MoverCache | null>(KEYS.movers, null),
+  set: (cache: MoverCache) => AsyncStorage.setItem(KEYS.movers, JSON.stringify(cache)),
 };
 
 /** Zeitpunkt der letzten Sicherung (ISO), null = noch nie gesichert. */
