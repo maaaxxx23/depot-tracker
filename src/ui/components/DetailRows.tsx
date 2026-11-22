@@ -14,6 +14,11 @@ export interface DetailRow {
   bold?: boolean;
   /** Wert im Privatsphäre-Modus weichzeichnen */
   private?: boolean;
+  /** Kleine zweite Zeile unter dem Wert, rechtsbündig */
+  valueHint?: string;
+  valueHintColor?: string;
+  /** valueHint im Privatsphäre-Modus weichzeichnen */
+  valueHintPrivate?: boolean;
 }
 
 /** Karte mit Zeilen „Bezeichnung … Wert“. Lange Bezeichnungen brechen um, der Wert bleibt rechts. */
@@ -29,7 +34,7 @@ export function DetailRows({ rows }: { rows: DetailRow[] }) {
               <Text style={[styles.text, { color: r.labelColor ?? theme.muted }, r.labelColor ? { fontWeight: '600' } : null]}>{r.label}</Text>
               {r.hint ? <Text style={styles.small}>{r.hint}</Text> : null}
             </View>
-            <View style={{ flexShrink: 0, alignItems: 'flex-end' }}>
+            <View style={{ flexShrink: 0, alignItems: 'flex-end', gap: 2 }}>
               {r.private ? (
                 <PrivateText containerStyle={{ alignSelf: 'auto' }} style={valueStyle}>
                   {r.value}
@@ -37,6 +42,15 @@ export function DetailRows({ rows }: { rows: DetailRow[] }) {
               ) : (
                 <Text style={valueStyle}>{r.value}</Text>
               )}
+              {r.valueHint ? (
+                r.valueHintPrivate ? (
+                  <PrivateText containerStyle={{ alignSelf: 'auto' }} style={[styles.small, styles.number, r.valueHintColor ? { color: r.valueHintColor } : null]}>
+                    {r.valueHint}
+                  </PrivateText>
+                ) : (
+                  <Text style={[styles.small, styles.number, r.valueHintColor ? { color: r.valueHintColor } : null]}>{r.valueHint}</Text>
+                )
+              ) : null}
             </View>
           </View>
         );

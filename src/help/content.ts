@@ -118,7 +118,7 @@ export const GUIDE: GuideSection[] = [
     title: 'Was steckt drin',
     body: [
       'Ein ETF enthält oft über tausend Firmen. Diese Ansicht rechnet über alle deine ETFs zusammen, in welchen Ländern, Branchen und Firmen dein Geld tatsächlich steckt. Steckt Apple in zwei ETFs, werden beide Anteile addiert.',
-      '„Top-Bewegungen“ zeigt für die zehn größten Firmen in deinem Depot, wie stark sich ihre Aktie heute bewegt und was das rechnerisch für dein Depot bedeutet (Gewicht × Bewegung). So siehst du an unruhigen Tagen, ob einzelne Schwergewichte den ETF ziehen oder der ganze Markt sich bewegt. Die zehn decken nur einen Teil des Depots ab; die vielen kleineren Firmen zählt die Liste nicht. Die Kurse kommen beim Öffnen der Ansicht von Yahoo und gelten für den jeweils letzten Handelstag.',
+      '„Top-Bewegungen“ zeigt für die zehn größten Firmen in deinem Depot, wie stark sich ihre Aktie heute bewegt und was das rechnerisch für dein Depot bedeutet (Gewicht × Bewegung), in Prozentpunkten und Euro. So siehst du an unruhigen Tagen, ob einzelne Schwergewichte den ETF ziehen oder der ganze Markt sich bewegt. Die zehn decken nur einen Teil des Depots ab; die vielen kleineren Firmen zählt die Liste nicht. Die Kurse kommen beim Öffnen der Ansicht von Yahoo und gelten für den jeweils letzten Handelstag.',
       'Dafür braucht die App von jedem ETF die Bestandsliste des Anbieters:',
       '1. Suche in Safari nach der ISIN oder WKN deines ETF und öffne die Seite beim Anbieter, zum Beispiel ishares.com. Beide Nummern stehen in „Was steckt drin“ bei jedem ETF und in den Details der Position. Antippen kopiert die jeweilige Nummer.',
       '2. Lade dort unter „Positionen“ bzw. „Bestände“ die vollständige Liste als CSV herunter.',

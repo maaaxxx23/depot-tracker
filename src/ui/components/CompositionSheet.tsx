@@ -8,7 +8,8 @@ import type { MoversResult } from '../../finance/movers';
 import type { IndustryCache } from '../../market/industries';
 import type { OverlapResult } from '../../finance/overlap';
 import type { PositionResult } from '../../finance/performance';
-import { dayMonth, pct, percent, signedPoints } from '../format';
+import { dayMonth, pct, percent, signedEur, signedPoints } from '../format';
+import { RichText } from '../RichText';
 import { tapFeedback } from '../haptics';
 import { Sheet } from '../Sheet';
 import { font, radius, useStyles } from '../styles';
@@ -84,6 +85,7 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   const heading = [styles.label, { fontWeight: '600' as const, paddingHorizontal: 4, marginTop: 8 }];
   const funds = positions.filter((p) => p.instrument.kind !== 'Aktie');
+  const depotValue = positions.reduce((s, p) => s + p.value, 0);
   const nameOf = (isin: string) => positions.find((p) => p.instrument.isin === isin)?.instrument.shortName ?? isin;
   const describe = (fund: FundComposition) => describeFund(fund, displayName);
   // Langer und kurzer Name zusammen: Banken kürzen mal den einen, mal den anderen ab
@@ -205,18 +207,29 @@ export function CompositionSheet({ visible, onClose, positions, result, overlap,
             <>
               <Text style={heading}>Top-Bewegungen</Text>
               <DetailRows
-                rows={movers.rows.map((r) => ({
-                  label: r.label,
-                  hint: `≈ ${signedPoints(r.contribution)} für dein Depot`,
-                  value: pct(r.change),
-                  color: r.change > 0 ? theme.positive : r.change < 0 ? theme.negative : theme.text,
-                }))}
+                rows={movers.rows.map((r) => {
+                  const color = r.change > 0 ? theme.positive : r.change < 0 ? theme.negative : theme.text;
+                  return {
+                    label: r.label,
+                    hint: `≈ ${signedPoints(r.contribution)} für dein Depot`,
+                    value: pct(r.change),
+                    color,
+                    valueHint: `≈ ${signedEur(depotValue * r.contribution)}`,
+                    valueHintColor: color,
+                    valueHintPrivate: true,
+                  };
+                })}
               />
-              <Text style={[styles.small, { paddingHorizontal: 4 }]}>
-                Zusammen bewegen diese Firmen dein Depot rechnerisch um {signedPoints(movers.totalContribution)}. Sie machen {percent(movers.totalWeight)} deines
-                Depots aus; was die vielen kleineren Firmen beitragen, zeigt die Liste nicht. Tagesbewegung an der Heimatbörse
-                {movers.date ? `, Handelstag ${dayMonth(movers.date)}` : ''} · Beitrag = Gewicht × Bewegung, eine Näherung.
-              </Text>
+              <View style={{ paddingHorizontal: 4 }}>
+                <RichText
+                  style={styles.small}
+                  parts={[
+                    `Zusammen bewegen diese Firmen dein Depot rechnerisch um ${signedPoints(movers.totalContribution)} oder`,
+                    { amount: depotValue * movers.totalContribution, signed: true },
+                    `. Sie machen ${percent(movers.totalWeight)} deines Depots aus; was die vielen kleineren Firmen beitragen, zeigt die Liste nicht. Tagesbewegung an der Heimatbörse${movers.date ? `, Handelstag ${dayMonth(movers.date)}` : ''} · Beitrag = Gewicht × Bewegung, eine Näherung.`,
+                  ]}
+                />
+              </View>
             </>
           ) : (
             moversLoading && (
